@@ -69,11 +69,43 @@ def problem3(data, second):
     return res
 
 
+def problem4(data, second):
+    _data = split_data('''2-4,6-8
+2-3,4-5
+5-7,7-9
+2-8,3-7
+6-6,4-6
+2-6,4-8''')
+    rt = ReTokenizer('{int}-{int},{int}-{int}')
+    res = 0
+    for a1, a2, b1, b2 in rt.match_all(data):
+        # print(a1, a2, b1, b2, res)
+        if b1 >= a1 and b2 <= a2:
+            res += 1
+            continue
+        if a1 >= b1 and a2 <= b2:
+            res += 1
+            continue
+        if not second:
+            continue
+
+        if b1 <= a1 and b2 >= a1:
+            res += 1
+            continue
+        if a1 <= b1 and a2 >= b1:
+            res += 1
+            continue
+
+    return res
+
+
 ##########
 
 def problem(data, second):
+    data = split_data(''' ''')
     if second: return
     return None
+
 
 ##########
 
