@@ -308,7 +308,7 @@ class AnswerDb:
         return json.loads(self.file.read_text())
 
     def save(self, answers):
-        self.file.write_text(json.dumps(answers, sort_keys=True, indent=4))
+        self.file.write_text(json.dumps(answers, sort_keys=True, indent=4), newline='\n')
 
     def answer(self, id, answer):
         assert answer is not None

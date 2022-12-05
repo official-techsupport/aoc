@@ -35,6 +35,38 @@ def problem2(data, second):
 
     return res
 
+def problem3(data, second):
+#     data = split_data('''vJrwpWtwJgWrhcsFMMfFFhFp
+# jqHRNqRjqzjGDLGLrsFMfFZSrLrFZsSL
+# PmmdzqPrVvPwwTWBwg
+# wMqvLMZHhHMvwLHjbvcjnnSBnvTQFn
+# ttgJtRGJQctTZtZT
+# CrZsJsPPZsGzwwsLwLmpwMDw''')
+
+    def score(c):
+        o = ord(c)
+        if ord('a') <= o <= ord('z'):
+            return o - ord('a') + 1
+        if ord('A') <= o <= ord('Z'):
+            return o - ord('A') + 27
+        assert False
+
+    res = 0
+    if second:
+        for s1, s2, s3 in grouper(data, 3):
+            common = frozenset(s1) & frozenset(s2) & frozenset(s3)
+            common, = common
+            res += score(common)
+    else:
+        for s in data:
+            assert not len(s) % 2
+            half = len(s)//2
+            p1, p2 = s[ : half], s[half : ]
+            common = frozenset(p1) & frozenset(p2)
+            common, = common
+            res += score(common)
+
+    return res
 
 
 ##########
