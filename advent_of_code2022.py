@@ -99,6 +99,52 @@ def problem4(data, second):
     return res
 
 
+def problem5(data, second):
+    data = get_raw_data()
+    _data = '''\
+    [D]....
+[N] [C]....
+[Z] [M] [P]
+ 1   2   3
+
+move 1 from 2 to 1
+move 3 from 1 to 3
+move 2 from 2 to 1
+move 1 from 1 to 2
+'''
+    data = data.split('\n')
+    cnt, remainder = divmod(len(data[0]) + 1, 4)
+    assert remainder == 0
+
+    def parse_stacks():
+        stacks = [[] for _ in range(cnt)]
+        for i, s in enumerate(data):
+            for j, c in enumerate(s[1::4]):
+                if c == '1':
+                    for stack in stacks:
+                        stack.reverse()
+                    return stacks, i
+                if c not in ' .':
+                    stacks[j].append(c)
+
+    stacks, i = parse_stacks()
+    # print(stacks)
+
+    for cnt, fro, to in ReTokenizer('move {int} from {int} to {int}').match_all(data[i + 2 : -1]):
+        # print(cnt, fro, to)
+        fro -= 1
+        to -= 1
+        if not second:
+            for _ in range(cnt):
+                stacks[to].append(stacks[fro].pop())
+        else:
+            stacks[to].extend(stacks[fro][-cnt : ])
+            del stacks[fro][-cnt : ]
+        # pprint(stacks)
+    res = ''.join(stack[-1] for stack in stacks)
+    return res
+
+
 ##########
 
 def problem(data, second):
