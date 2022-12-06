@@ -145,6 +145,22 @@ move 1 from 1 to 2
     return res
 
 
+def problem6(data, second):
+    _data = 'zcfzfwzzqfrljwzlrfnpqdbhtmscgvjw'
+    buf = []
+    if second:
+        span = 14
+    else:
+        span = 4
+    for i, c in enumerate(data):
+        buf.append(c)
+        if len(buf) > span:
+            del buf[0]
+        if len(buf) == span and len(set(buf)) == span:
+            return i + 1
+    assert False
+
+
 ##########
 
 def problem(data, second):
