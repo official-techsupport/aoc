@@ -161,6 +161,82 @@ def problem6(data, second):
     assert False
 
 
+def problem7(data, second):
+    _data = split_data('''$ cd /
+$ ls
+dir a
+14848514 b.txt
+8504156 c.dat
+dir d
+$ cd a
+$ ls
+dir e
+29116 f
+2557 g
+62596 h.lst
+$ cd e
+$ ls
+584 i
+$ cd ..
+$ cd ..
+$ cd d
+$ ls
+4060174 j
+8033020 d.log
+5626152 d.ext
+7214296 k''')
+    tree = {}
+    current = tree
+    for s in data:
+        def consume(token):
+            nonlocal s
+            if s.startswith(token):
+                _, _, s = s.partition(' ')
+                return True
+
+        if consume('$'):
+            if consume('ls'):
+                assert s == ''
+            elif consume('cd'):
+                if s == '/':
+                    current = tree
+                elif s == '..':
+                    current = current['..']
+                else:
+                    current = current[s]
+                    assert not isinstance(current, int)
+            else:
+                assert False
+        else:
+            size, name = s.split()
+            if size == 'dir':
+                current.setdefault(name, {'..': current})
+            else:
+                current[name] = int(size)
+
+    answer1 = 0
+    dirs = []
+    def rec1(it):
+        nonlocal answer1
+        size = 0
+        for k, v in it.items():
+            if isinstance(v, int):
+                size += v
+            elif k != '..':
+                size += rec1(v)
+        if size <= 100_000:
+            answer1 += size
+        dirs.append(size)
+        return size
+    unused = 70000000 - rec1(tree)
+    if not second:
+        return answer1
+    # print(unused)
+    to_delete = 30000000 - unused
+    # print(to_delete)
+    return min(size for size in dirs if size >= to_delete)
+
+
 ##########
 
 def problem(data, second):
