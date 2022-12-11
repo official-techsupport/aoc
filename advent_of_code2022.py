@@ -347,6 +347,294 @@ U 20''')
     return len(visited)
 
 
+def problem10(data, second):
+    _data = split_data('''addx 15
+addx -11
+addx 6
+addx -3
+addx 5
+addx -1
+addx -8
+addx 13
+addx 4
+noop
+addx -1
+addx 5
+addx -1
+addx 5
+addx -1
+addx 5
+addx -1
+addx 5
+addx -1
+addx -35
+addx 1
+addx 24
+addx -19
+addx 1
+addx 16
+addx -11
+noop
+noop
+addx 21
+addx -15
+noop
+noop
+addx -3
+addx 9
+addx 1
+addx -3
+addx 8
+addx 1
+addx 5
+noop
+noop
+noop
+noop
+noop
+addx -36
+noop
+addx 1
+addx 7
+noop
+noop
+noop
+addx 2
+addx 6
+noop
+noop
+noop
+noop
+noop
+addx 1
+noop
+noop
+addx 7
+addx 1
+noop
+addx -13
+addx 13
+addx 7
+noop
+addx 1
+addx -33
+noop
+noop
+noop
+addx 2
+noop
+noop
+noop
+addx 8
+noop
+addx -1
+addx 2
+addx 1
+noop
+addx 17
+addx -9
+addx 1
+addx 1
+addx -3
+addx 11
+noop
+noop
+addx 1
+noop
+addx 1
+noop
+noop
+addx -13
+addx -19
+addx 1
+addx 3
+addx 26
+addx -30
+addx 12
+addx -1
+addx 3
+addx 1
+noop
+noop
+noop
+addx -9
+addx 18
+addx 1
+addx 2
+noop
+noop
+addx 9
+noop
+noop
+noop
+addx -1
+addx 2
+addx -37
+addx 1
+addx 3
+noop
+addx 15
+addx -21
+addx 22
+addx -6
+addx 1
+noop
+addx 2
+addx 1
+noop
+addx -10
+noop
+noop
+addx 20
+addx 1
+addx 2
+addx 2
+addx -6
+addx -11
+noop
+noop
+noop''')
+    x = 1
+    cycle = 1
+    probes = [20, 60, 100, 140, 180, 220]
+    res = {}
+    img = np.full(6*40, '.')
+    def draw():
+        if cycle in probes:
+            res[cycle] = x
+        c = cycle - 1
+        if abs(c % 40 - x) <= 1:
+            img[c] = '#'
+
+    for s in data:
+        draw()
+        if s == 'noop':
+            pass
+        else:
+            cmd, val = s.split()
+            assert cmd == 'addx'
+            val = int(val)
+            cycle += 1
+            draw()
+            x += val
+        cycle += 1
+    assert len(res) == len(probes)
+    if not second:
+        return sum(k * v for k, v in res.items())
+    return 'PGHFGLUG'
+    img = img.reshape((6, 40))
+    for line in img:
+        print(''.join(line))
+
+
+def problem11(data, second):
+    _data = split_data('''Monkey 0:
+  Starting items: 79, 98
+  Operation: new = old * 19
+  Test: divisible by 23
+    If true: throw to monkey 2
+    If false: throw to monkey 3
+
+Monkey 1:
+  Starting items: 54, 65, 75, 74
+  Operation: new = old + 6
+  Test: divisible by 19
+    If true: throw to monkey 2
+    If false: throw to monkey 0
+
+Monkey 2:
+  Starting items: 79, 60, 97
+  Operation: new = old * old
+  Test: divisible by 13
+    If true: throw to monkey 1
+    If false: throw to monkey 3
+
+Monkey 3:
+  Starting items: 74
+  Operation: new = old + 3
+  Test: divisible by 17
+    If true: throw to monkey 0
+    If false: throw to monkey 1''')
+
+    monkeys = []
+    @dataclass
+    class Monkey:
+        items : List[int] = dataclass_field(default_factory=list)
+        operation = None
+        test = 0
+        test_true = 0
+        test_false= 0
+        inspected = 0
+
+    def consume(s, prefix):
+        assert s.startswith(prefix)
+        return s[len(prefix):]
+
+    for s in data:
+        op, args = s.split(':')
+        # print(f'{op!r}: {args!r}')
+        if op.startswith('Monkey'):
+            assert not args
+            _, arg = op.split()
+            assert int(arg) == len(monkeys)
+            monke = Monkey()
+            monkeys.append(monke)
+        elif op == 'Starting items':
+            monke.items = [int(s.strip()) for s in args.split(',')]
+        elif op == 'Operation':
+            args = consume(args, ' new = old ')
+            op = args[0]
+            assert op in '*+'
+            arg = args[1:].strip()
+            if arg != 'old':
+                arg = int(arg)
+            if op == '+':
+                monke.operation = lambda x, arg=arg: x + (x if arg == 'old' else arg)
+            else:
+                monke.operation = lambda x, arg=arg: x * (x if arg == 'old' else arg)
+        elif op == 'Test':
+            args = consume(args, ' divisible by ')
+            monke.test = int(args)
+        elif op == 'If true':
+            args = consume(args, ' throw to monkey ')
+            monke.test_true = int(args)
+        elif op == 'If false':
+            args = consume(args, ' throw to monkey ')
+            monke.test_false = int(args)
+        else:
+            assert False
+
+    # pprint(monkeys)
+
+    modulo = functools.reduce(operator.mul, [m.test for m in monkeys], 1)
+
+    for round in range(10_000 if second else 20):
+        for i, m in enumerate(monkeys):
+            # print(f'Monke {i}')
+            items = m.items
+            m.items = []
+            for it in items:
+                m.inspected += 1
+                # print(f'inspect {it}')
+                it = m.operation(it)
+                # print(f'worry to {it}')
+                if not second:
+                    it //= 3
+                it %= modulo
+                # print(f'worry to {it}')
+                target = m.test_false if it % m.test else m.test_true
+                # print(f'target {target}')
+                monkeys[target].items.append(it)
+        # pprint(monkeys)
+
+    top = [-m.inspected for m in monkeys]
+    heapify(top)
+    a, b = heappop(top), heappop(top)
+    return a * b
+
+
+
+
 
 ##########
 
