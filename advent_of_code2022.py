@@ -633,6 +633,164 @@ Monkey 3:
     return a * b
 
 
+def problem12(data, second):
+    _data = split_data('''Sabqponm
+abcryxxl
+accszExk
+acctuvwj
+abdefghi''')
+
+    g = networkx.DiGraph()
+
+    def translate(c):
+        if c == 'S': return ord('a')
+        if c == 'E': return ord('z')
+        return ord(c)
+
+    def get(p):
+        i, j = p
+        if 0 <= i < len(data):
+            if 0 <= j < len(data[i]):
+                return translate(data[i][j])
+        return -5
+
+    start, goal = [], None
+
+    for i, s in enumerate(data):
+        for j, c in enumerate(s):
+            p = (i, j)
+            if c == 'S' or (c == 'a' and second):
+                start.append(p)
+            elif c == 'E':
+                assert not goal
+                goal = p
+
+            for dir in directions4:
+                p2 = addv2(p, dir)
+                if get(p2) - get(p) <= 1:
+                    g.add_edge(p, p2)
+
+    found, visited = bfs_full(start, lambda x: x == goal, lambda x: g.neighbors(x))
+    assert found
+    p = bfs_extract_path(goal, visited)
+    return len(p) - 1
+
+
+def problem13(data, second):
+    _data = split_data('''[1,1,3,1,1]
+[1,1,5,1,1]
+
+[[1],[2,3,4]]
+[[1],4]
+
+[9]
+[[8,7,6]]
+
+[[4,4],4,4]
+[[4,4],4,4,4]
+
+[7,7,7,7]
+[7,7,7]
+
+[]
+[3]
+
+[[[]]]
+[[]]
+
+[1,[2,[3,[4,[5,6,7]]]],8,9]
+[1,[2,[3,[4,[5,6,0]]]],8,9]''')
+    # if second: return
+    def compare(first, second):
+        if first is None:
+            return -1
+        if second is None:
+            return 1
+
+        if isinstance(first, int) and isinstance(second, int):
+            return first - second
+
+        if isinstance(first, int):
+            first = [first]
+        if isinstance(second, int):
+            second = [second]
+
+        for a, b in itertools.zip_longest(first, second):
+            c = compare(a, b)
+            if c != 0:
+                return c
+
+        return 0
+
+    if not second:
+        res = 0
+        for i, (first, second) in enumerate(grouper(data, 2)):
+            first, second = ast.literal_eval(first), ast.literal_eval(second)
+            r = compare(first, second)
+            # print(i + 1, first, second, r)
+            if r < 0:
+                res += i + 1
+        return res
+    else:
+        lst = [ast.literal_eval(it) for it in data]
+        a, b = [[2]], [[6]]
+        lst.append(a)
+        lst.append(b)
+        lst.sort(key=functools.cmp_to_key(compare))
+        for i, it in enumerate(lst):
+            if it == a:
+                n1 = i + 1
+            if it == b:
+                n2 = i + 1
+        return n1 * n2
+
+
+def problem14(data, second):
+    _data = split_data('''498,4 -> 498,6 -> 496,6
+503,4 -> 502,4 -> 502,9 -> 494,9''')
+    fld = np.full((500, 1000), '.')
+
+    def fullslice(start, stop):
+        if start < stop: return slice(start, stop + 1)
+        return slice(stop, start + 1)
+
+    def parseintpair(p):
+        return tuple(int(x) for x in p.split(','))
+
+    max_i = 0
+    for line in data:
+        for p1, p2 in pairwise(line.split('->')):
+            p1, p2 = map(parseintpair, [p1, p2])
+            max_i = max(p1[1], p2[1], max_i)
+            if p1[0] == p2[0]:
+                fld[fullslice(p1[1], p2[1]), p1[0]] = '#'
+            else:
+                assert p1[1] == p2[1]
+                fld[p2[1], fullslice(p1[0], p2[0])] = '#'
+
+    # print('\n'.join(''.join(c for c in s) for s in fld[0:20, 490:510]))
+
+    sys.setrecursionlimit(10_000)
+
+    def pour(row, col):
+        try:
+            if fld[row, col] != '.':
+                return False
+        except IndexError:
+            return True
+
+        fld[row, col] = '@'
+        for i in [0, -1, 1]:
+            x = pour(row + 1, col + i)
+            if x:
+                return x
+        return False
+
+    if second:
+        fld[max_i + 2, 0 : 1000] = '#'
+
+    pour(0, 500)
+    return np.count_nonzero(fld == '@') - (0 if second else 500)
 
 
 
