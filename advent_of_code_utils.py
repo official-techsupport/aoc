@@ -382,7 +382,7 @@ def solve(problem: Callable, second=False):
     data = answer_db.fetch_input(n)
     _raw_data = data
     data = split_data(data)
-    description = f'{n}_{int(second)}'
+    description = f'{n}_{int(second) + 1}'
     with timeit_block(description):
         res = problem(data, second)
     if res is not None:

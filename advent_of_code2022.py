@@ -795,7 +795,7 @@ def problem14(data, second):
 
 def problem15(data, second):
     line_y = 2000000
-    size_limit = 20
+    # size_limit = 20
     size_limit = 4_000_000
     _data = split_data('''Sensor at x=2, y=18: closest beacon is at x=-2, y=15
 Sensor at x=9, y=16: closest beacon is at x=10, y=16
@@ -859,6 +859,17 @@ Sensor at x=20, y=1: closest beacon is at x=15, y=3''')
     if not second:
         return res
 
+    import z3
+    x, y = z3.Ints('x y')
+    zs = z3.Solver()
+    zs.add(0 <= x, x <= size_limit)
+    zs.add(0 <= y, y <= size_limit)
+    for it in data:
+        zs.add(z3.Abs(x - it.sx) + z3.Abs(y - it.sy) > it.r)
+    assert zs.check() == z3.sat
+    return zs.model().eval(x * 4000_000 + y).as_long()
+
+
     for line_y in range(size_limit + 1):
         if not line_y % 100_000:
             print(line_y)
@@ -883,6 +894,78 @@ Sensor at x=20, y=1: closest beacon is at x=15, y=3''')
     assert False
 
 
+def problem16(data, second):
+    _data = split_data('''Valve AA has flow rate=0; tunnels lead to valves DD, II, BB
+Valve BB has flow rate=13; tunnels lead to valves CC, AA
+Valve CC has flow rate=2; tunnels lead to valves DD, BB
+Valve DD has flow rate=20; tunnels lead to valves CC, AA, EE
+Valve EE has flow rate=3; tunnels lead to valves FF, DD
+Valve FF has flow rate=0; tunnels lead to valves EE, GG
+Valve GG has flow rate=0; tunnels lead to valves FF, HH
+Valve HH has flow rate=22; tunnel leads to valve GG
+Valve II has flow rate=0; tunnels lead to valves AA, JJ
+Valve JJ has flow rate=21; tunnel leads to valve II''')
+    rt = ReTokenizer()
+    @rt.add_dataclass('Valve {} has flow rate={}; tunnels? leads? to valves? {}')
+    class Node:
+        name: str
+        rate: int
+        neighbors: '(.*)'
+
+    data = rt.match_all(data)
+    targets = []
+    for it in data:
+        if it.rate:
+            targets.append(it)
+    start = 'AA'
+
+    max_bits = len(targets)
+    full_bits = (1 << max_bits) - 1
+
+    maing = networkx.Graph()
+    for it in data:
+        for n in [s.strip() for s in it.neighbors.split(',')]:
+            maing.add_edge(it.name, n)
+    path_lengths = dict(networkx.all_pairs_shortest_path_length(maing))
+
+    def run(bit_mask, days):
+        node = (start, 0)
+        visited = {}
+        front = [(0, node, 0)]
+        while front:
+            turn, node, score = heappop(front)
+            # print(turn, node, score)
+            pos, bits = node
+            if visited.get(node, -1) >= score:
+                continue
+            visited[node] = score
+            for bit in range(max_bits):
+                if not ((1 << bit) & bit_mask):
+                    continue
+                new_bits = bits | (1 << bit)
+                if new_bits == bits:
+                    continue
+                new_pos = targets[bit].name
+                new_node = (new_pos, new_bits)
+                new_turn = turn + path_lengths[pos][new_pos] + 1
+                if new_turn >= days:
+                    continue
+                new_score = score + (days - new_turn) * targets[bit].rate
+                if visited.get(new_node, -1) >= score:
+                    continue
+                heappush(front, (new_turn, new_node, new_score))
+        return max(visited.values())
+
+    if not second:
+        return run(full_bits, 30)
+    scores = []
+    for bit_mask in range(full_bits + 1):
+        scores.append(run(bit_mask, 26))
+        if len(scores) % 100 == 0:
+            print(len(scores))
+
+    return max(score + scores[full_bits ^ n] for n, score in enumerate(scores))
+
 
 ##########
 
@@ -897,5 +980,5 @@ def problem(data, second):
 if __name__ == '__main__':
     print('Hello')
     # solve_all()
-    # solve_latest(22)
+    # solve_latest(15)
     solve_latest()
