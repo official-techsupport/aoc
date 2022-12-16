@@ -793,6 +793,96 @@ def problem14(data, second):
     return np.count_nonzero(fld == '@') - (0 if second else 500)
 
 
+def problem15(data, second):
+    line_y = 2000000
+    size_limit = 20
+    size_limit = 4_000_000
+    _data = split_data('''Sensor at x=2, y=18: closest beacon is at x=-2, y=15
+Sensor at x=9, y=16: closest beacon is at x=10, y=16
+Sensor at x=13, y=2: closest beacon is at x=15, y=3
+Sensor at x=12, y=14: closest beacon is at x=10, y=16
+Sensor at x=10, y=20: closest beacon is at x=10, y=16
+Sensor at x=14, y=17: closest beacon is at x=10, y=16
+Sensor at x=8, y=7: closest beacon is at x=2, y=10
+Sensor at x=2, y=0: closest beacon is at x=2, y=10
+Sensor at x=0, y=11: closest beacon is at x=2, y=10
+Sensor at x=20, y=14: closest beacon is at x=25, y=17
+Sensor at x=17, y=20: closest beacon is at x=21, y=22
+Sensor at x=16, y=7: closest beacon is at x=15, y=3
+Sensor at x=14, y=3: closest beacon is at x=15, y=3
+Sensor at x=20, y=1: closest beacon is at x=15, y=3''')
+    rt = ReTokenizer()
+    @rt.add_dataclass('Sensor at x={}, y={}: closest beacon is at x={}, y={}', frozen=False)
+    class Item:
+        sx: int
+        sy: int
+        bx: int
+        by: int
+        r = 0
+
+    data: List[Item] = rt.match_all(data)
+    for it in data:
+        it.r = abs(it.sx - it.bx) + abs(it.sy - it.by)
+
+    line = []
+    beacons_dedup = set()
+    for it in data:
+        r_at = it.r - abs(it.sy - line_y)
+        if r_at < 0:
+            continue
+        line.append((it.sx - r_at, '('))
+        line.append((it.sx + r_at + 1, ')'))
+
+        if it.sy == line_y:
+            line.append((it.sx, 'S'))
+        if it.by == line_y and it.bx not in beacons_dedup:
+            line.append((it.bx, 'B'))
+            beacons_dedup.add(it.bx)
+
+    line.sort()
+
+    prev_x = None
+    nested = 0
+    res = 0
+    for x, s in line:
+        if nested:
+            res += x - prev_x
+        if s == '(':
+            nested += 1
+        elif s == ')':
+            nested -= 1
+        else:
+            assert s in 'BS'
+            if nested:
+                res -= 1
+        prev_x = x
+    if not second:
+        return res
+
+    for line_y in range(size_limit + 1):
+        if not line_y % 100_000:
+            print(line_y)
+        line = []
+        for it in data:
+            r_at = it.r - abs(it.sy - line_y)
+            if r_at < 0:
+                continue
+            line.append((it.sx - r_at, '('))
+            line.append((it.sx + r_at + 1, ')'))
+        line.sort()
+        nested = 0
+        for x, s in line:
+            if x > size_limit:
+                break
+            if s == '(':
+                nested += 1
+            elif s == ')':
+                nested -= 1
+                if not nested:
+                    return x * 4000000 + line_y
+    assert False
+
+
 
 ##########
 
