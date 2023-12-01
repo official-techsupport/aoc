@@ -18,15 +18,17 @@ zoneight234
     ds = '\\d one two three four five six seven eight nine'.split()
     if not second:
         del ds[1:]
-    rx = re.compile('(?=(' + '|'.join(ds) + '))')
+    rx1 = re.compile('.*?(' + '|'.join(ds) + ')')
+    rx2 = re.compile('.*(' + '|'.join(ds) + ')')
     def get(s: str):
-        mm = rx.findall(s)
+        m1 = rx1.match(s).group(1)
+        m2 = rx2.match(s).group(1)
         def decode(s):
             try:
                 return str(ds.index(s))
             except ValueError:
                 return str(int(s))
-        return int(decode(mm[0]) + decode(mm[-1]))
+        return int(decode(m1) + decode(m2))
     return sum(get(s) for s in data)
 
 
