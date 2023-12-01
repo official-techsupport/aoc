@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import advent_of_code_utils
 from advent_of_code_utils import *
 utils_init(2022, globals())
 
@@ -967,7 +968,412 @@ Valve JJ has flow rate=21; tunnel leads to valve II''')
     return max(score + scores[full_bits ^ n] for n, score in enumerate(scores))
 
 
-##########
+def problem17(data, second):
+    data = split_data('''>>><<><>><<<>><>>><<<>>><<<><<<>><>><<>>''')
+    if second: return
+
+    figures = '''####
+
+.#.
+###
+.#.
+
+..#
+..#
+###
+
+#
+#
+#
+#
+
+##
+##'''.split('\n\n')
+    def parse_fig(s):
+        raw = np.asarray([[c for c in ss] for ss in s])
+        return np.nonzero(raw == '#')
+
+    figures = [parse_fig(f) for f in figures]
+    # print(figures)
+
+    # field = np.zeros(
+    return None
+
+
+def problem18(data, second):
+    data = split_data('''2,2,2
+1,2,2
+3,2,2
+2,1,2
+2,3,2
+2,2,1
+2,2,3
+2,2,4
+2,2,6
+1,2,5
+3,2,5
+2,1,5
+2,3,5''')
+    # if second: return
+    dirs = list([
+        (1, 0, 0),
+        (-1, 0, 0),
+        (0, 1, 0),
+        (0, -1, 0),
+        (0, 0, 1),
+        (0, 0, -1),
+    ])
+    data = [tuple(int(x) for x in lst.split(',')) for lst in data]
+    cubes = frozenset(data)
+
+    def addv3(v1, v2):
+        return v1[0] + v2[0], v1[1] + v2[1], v1[2] + v2[2]
+
+    def fresh_neighbors(c):
+        for d in dirs:
+            n = addv3(c, d)
+            if n not in cubes:
+                yield n
+
+    @functools.cache
+    def can_reach_surface(c):
+        def goal(c):
+            return any(0 <= it <= 20 for it in c)
+        advent_of_code_utils.quiet = False
+        (reached, _) = bfs_full([c], goal, fresh_neighbors)
+        return bool(reached)
+
+    @functools.cache
+    def surface(cubes):
+        res = 0
+        for c in cubes:
+            for n in fresh_neighbors(c):
+                if not second : #or not can_reach_surface(n):
+                    res += 1
+        return res
+
+    srf = surface(cubes)
+    return srf
+
+
+def problem19(data, second):
+    data = get_raw_data()
+    data = '''Blueprint 1:
+  Each ore robot costs 4 ore.
+  Each clay robot costs 2 ore.
+  Each obsidian robot costs 3 ore and 14 clay.
+  Each geode robot costs 2 ore and 7 obsidian.
+
+Blueprint 2:
+  Each ore robot costs 2 ore.
+  Each clay robot costs 3 ore.
+  Each obsidian robot costs 3 ore and 8 clay.
+  Each geode robot costs 3 ore and 12 obsidian.'''
+    if second: return
+    rx = ReTokenizer()
+    rx.add_tuple('Blueprint {int}:')
+    rx.add_tuple('Each {id} robot costs {int} {id} and {int} {id}.')
+    rx.add_tuple('Each {id} robot costs {int} {id}.')
+    recipes = []
+    @dataclass
+    class Recipe:
+        c00: int
+        c10: int
+        c20: int
+        c21: int
+        c30: int
+        c32: int
+        maxcx0: int
+
+    for lines in grouper(rx.parse(data), 5):
+        rid, = lines[0]
+        assert rid == len(recipes) + 1
+        _, c00, _ = lines[1]
+        _, c10, _ = lines[2]
+        _, c20, _, c21, _ = lines[3]
+        _, c30, _, c32, _ = lines[4]
+        r = Recipe(c00, c10, c20, c21, c30, c32, max(c00, c10, c20, c30))
+        recipes.append(r)
+
+    def add_at(t, idx, val, idx2=None, val2=None):
+        t = list(t)
+        t[idx] += val
+        if idx2 is not None:
+            t[idx2] += val2
+        return t
+
+    def rec(recipe: Recipe, robs, which, mats, mins, target):
+        # print(robs, mats, mins)
+        mats = tuple(m + r for m, r in zip(mats, robs))
+        mins -= 1
+        if not mins:
+            print(target, robs, mats)
+            return mats[3]
+
+        if which is not None:
+            robs = add_at(robs, which, 1)
+
+        best = 0
+        could = False
+        if mats[0] >= recipe.c00 and robs[0] < target[0]:
+            best = max(best, rec(recipe, robs, 0,
+                add_at(mats, 0, -recipe.c00), mins, target))
+
+        if mats[0] >= recipe.c10 and robs[1] < target[1]:
+            best = max(best, rec(recipe, robs, 1,
+                add_at(mats, 0, -recipe.c10), mins, target))
+
+        if mats[0] >= recipe.c20 and mats[1] >= recipe.c21 and robs[2] < target[2]:
+            best = max(best, rec(recipe, robs, 2,
+                add_at(mats, 0, -recipe.c20, 1, -recipe.c21), mins, target))
+            could = True
+
+        if mats[0] >= recipe.c30 and mats[2] >= recipe.c32:
+            best = max(best, rec(recipe, robs, 3,
+                add_at(mats, 0, -recipe.c30, 2, -recipe.c32), mins, target))
+            could = True
+
+        if not could and mats[0] < recipe.maxcx0:
+            best = max(best, rec(recipe, robs, None, mats, mins, target))
+
+        return best
+
+    def gen_target(recipe, mins):
+        return max(rec(recipe, (1, 0, 0, 0), None, (0, 0, 0, 0), mins, list(target))
+            for target in itertools.product(range(1, 3), range(1, 7), range(1, 7)))
+
+
+
+    res = 0
+    for i, r in enumerate(recipes):
+        score = gen_target(r, 24)
+        print(i, score)
+        res += (i + 1) * score
+    return res
+
+
+def problem20(data, second):
+    _data = split_data('''1
+2
+-3
+3
+-2
+0
+4''')
+    if second: return
+    orig = [int(d) for d in data]
+    data = list(orig)
+    print(len(data), len(set(data)))
+    for it in orig:
+        idx = data.index(it)
+        dir = np.sign(it)
+        for _ in range(abs(it)):
+            nidx = (idx + dir) % len(data)
+            data[idx], data[nidx] = data[nidx], data[idx]
+            idx = nidx
+        # print(data)
+    zidx = data.index(0)
+    print(zidx)
+    return sum(data[(zidx + i) % len(data)] for i in (1000, 2000, 3000))
+
+
+def problem21(data, second):
+    import z3
+    _data = split_data('''root: pppw + sjmn
+dbpl: 5
+cczh: sllz + lgvd
+zczc: 2
+ptdq: humn - dvpt
+dvpt: 3
+lfqf: 4
+humn: 5
+ljgn: 2
+sjmn: drzm * dbpl
+sllz: 4
+pppw: cczh / lfqf
+lgvd: ljgn * ptdq
+drzm: hmdt - zczc
+hmdt: 32''')
+    rx = ReTokenizer()
+    rx.add_tuple('{id}: {int_or_id}')
+    rx.add_tuple('{id}: {int_or_id} {([-+*/])} {int_or_id}')
+    dd = {}
+    for d in rx.match_all(data):
+        id, *res = d
+        if len(res) == 1:
+            res = res[0]
+        dd[id] = res
+    data = dd
+
+    humn = None
+
+    # @functools.cache
+    def eval(s, zs = None):
+        nonlocal humn
+        if zs and s == 'humn':
+            humn = z3.Int('humn')
+            return humn
+
+        x = data[s]
+        if isinstance(x, int):
+            return x
+        if isinstance(x, str):
+            data[s] = eval(x, zs)
+            return data[s]
+        a, op, b = x
+        a = eval(a, zs)
+        b = eval(b, zs)
+        data[s] = a, op, b
+        if zs and s == 'root':
+            op = '='
+        op = {
+            '+': operator.add,
+            '-': operator.sub,
+            '*': operator.mul,
+            '/': lambda xx, yy: xx / yy if zs else xx // yy,
+            '=': operator.eq,
+        }[op]
+        if zs:
+            if (isinstance(a, int) and isinstance(b, int)):
+                return op(a, b)
+            # print(s, x)
+            var = z3.Int(s)
+            zs.add(var == op(a, b))
+            return var
+
+        return op(a, b)
+
+    if not second:
+        return eval('root')
+
+    import z3
+    zs = z3.Solver()
+    root = eval('root', zs)
+    zs.add(root == True)
+    assert zs.check() == z3.sat
+    # print(zs.model())
+    return zs.model().eval(humn).as_long()
+
+
+def problem22(data, second):
+    data = get_raw_data()
+    _data = '''        ...#
+        .#..
+        #...
+        ....
+...#.......#
+........#...
+..#....#....
+..........#.
+        ...#....
+        .....#..
+        .#......
+        ......#.
+
+10R5L5R10L4R5L5'''
+    data, path = data.split('\n\n')
+    data = data.split('\n')
+    width = max(len(s) for s in data)
+    height = len(data)
+    field = np.zeros((height, width), dtype=np.int32)
+    for i, s in enumerate(data):
+        for j, c in enumerate(s):
+            if c == '.':
+                c = 1
+            elif c == '#':
+                c = 2
+            else:
+                c = 0
+            field[i, j] = c
+    startx = None
+    for i, c in enumerate(field[0]):
+        if c == 1:
+            startx = i
+            break
+    pos = npv2(0, startx)
+    dir = npv2(0, 1)
+    steps = ''
+
+    def incell(pos, row, col):
+        return pos[0] // 50, pos[1] // 50 == (row, col)
+
+    def step(pos, dir):
+        oldpos = pos
+        pos = pos + dir
+        if second:
+            if incell(pos, 0, 3):
+                ''
+            elif incell(pos, -1, 2):
+                ''
+            elif incell(pos, -1, 1):
+                ''
+            elif incell(pos, 0, 0):
+                ''
+            elif incell(pos, 1, 0) and incell(oldpos, 1, 1):
+                ''
+            elif incell(pos, 1, 0) and incell(oldpos, 2, 0):
+                ''
+
+
+        if pos[0] == height:
+            pos[0] = 0
+        if pos[0] == -1:
+            pos[0] = height - 1
+        if pos[1] == width:
+            pos[1] = 0
+        if pos[1] == -1:
+            pos[1] = width - 1
+        return pos, dir
+
+    def dir2int(dir):
+        if np.array_equal(dir, npv2(0, 1)):
+            return 0
+        if np.array_equal(dir, npv2(1, 0)):
+            return 1
+        if np.array_equal(dir, npv2(0, -1)):
+            return 2
+        if np.array_equal(dir, npv2(-1, 0)):
+            return 3
+        assert False
+
+    for c in path + 'Z':
+        if c in '0123456789':
+            steps += c
+        else:
+            if not steps:
+                break
+            steps = int(steps)
+            for _ in range(steps):
+                newpos = pos
+                while True:
+                    newpos, newdir = step(newpos, dir)
+                    # print(newpos)
+                    if field[newpos[0], newpos[1]]:
+                        break
+
+                if field[newpos[0], newpos[1]] == 1:
+                    pos = newpos
+                    dir = newdir
+                else:
+                    break
+            if c == 'R':
+                dir = npv2(dir[1], -dir[0])
+            elif c == 'L':
+                dir = npv2(-dir[1], dir[0])
+            else:
+                assert c in 'Z\n'
+            steps = ''
+
+    return (pos[0] + 1) * 1000 + (pos[1] + 1) * 4 + dir2int(dir)
+
+
+def problem23(data, second):
+    data = split_data(''' ''')
+    if second: return
+    return None
+
+
+#########
 
 def problem(data, second):
     data = split_data(''' ''')
