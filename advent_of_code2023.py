@@ -32,6 +32,53 @@ zoneight234
     return sum(get(s) for s in data)
 
 
+def problem2(data, second):
+    _data = split_data('''Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green
+Game 2: 1 blue, 2 green; 3 green, 4 blue, 1 red; 1 green, 1 blue
+Game 3: 8 green, 6 blue, 20 red; 5 blue, 4 red, 13 green; 5 green, 1 red
+Game 4: 1 green, 3 red, 6 blue; 3 green, 6 red; 3 green, 15 blue, 14 red
+Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green''')
+    d = []
+    for i, s in enumerate(data):
+        g, r = s.split(':')
+        g = int(g.removeprefix('Game '))
+        assert g == i + 1
+        r = r.split(';')
+        measures = []
+        for s in r:
+            st = s.split(',')
+            m = {}
+            for it in st:
+                n, color = it.split()
+                m[color] = int(n)
+            measures.append(m)
+        d.append(measures)
+    target = {'red': 12, 'green': 13, 'blue': 14}
+    res = 0
+    for id, mm in enumerate(d):
+        def check(mm):
+            for m in mm:
+                for color, n in m.items():
+                    if n > target[color]:
+                        return 0
+            return id + 1
+        def check2(mm):
+            mins = {}
+            for m in mm:
+                for color, n in m.items():
+                    mins[color] = max(mins[color], n) if color in mins else n
+            # print(id, mins)
+            r = 1
+            for it in mins.values():
+                r *= it
+            return r
+        if second:
+            res += check2(mm)
+        else:
+            res += check(mm)
+    return res
+
+
 
 
 #########
