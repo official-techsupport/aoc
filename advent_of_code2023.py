@@ -79,6 +79,68 @@ Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green''')
     return res
 
 
+def problem3(data, second):
+    _data = split_data('''
+467..114..
+...*......
+..35..633.
+......#...
+617*......
+.....+.58.
+..592.....
+......755.
+...$.*....
+.664.598..
+''')
+
+    rows, cols = len(data), len(data[0])
+    visited = set()
+    digits = string.digits
+    numbers = []
+    gears = defaultdict(list)
+
+    def get(i, j):
+        if 0 <= i < rows and 0 <= j < cols:
+            return data[i][j]
+        return '.'
+
+    for i in range(rows):
+        for j in range(cols):
+            if (i, j) in visited: continue
+            if data[i][j] in digits:
+                visited.add((i, j))
+                n = int(data[i][j])
+                for k in range(1, 10):
+                    if get(i, j + k) in digits:
+                        visited.add((i, j + k))
+                        n = n * 10 + int(data[i][j + k])
+                    else:
+                        break
+                found = False
+                current = set()
+                for k in range(k):
+                    for dx in (-1, 0, 1):
+                        for dy in (-1, 0, 1):
+                            c = get(i + dx, j + k + dy)
+                            if c is not None and c not in digits and c != '.':
+                                found = True
+                                if c == '*':
+                                    coord = (i + dx, j + k + dy)
+                                    if coord not in current:
+                                        gears[coord].append(n)
+                                        current.add(coord)
+
+                if found:
+                    numbers.append(n)
+
+    if not second:
+        return sum(numbers)
+
+    res = 0
+    for lst in gears.values():
+        if len(lst) == 2:
+            res += lst[0] * lst[1]
+    return res
 
 
 #########
