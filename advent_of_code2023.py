@@ -168,13 +168,97 @@ Card 6: 31 18 13 56 72 | 74 77 10 23 35 67 36 11''')
     return sum(copies)
 
 
+def problem5(data, second):
+    _data = split_data('''seeds: 79 14 55 13
 
+seed-to-soil map:
+50 98 2
+52 50 48
 
+soil-to-fertilizer map:
+0 15 37
+37 52 2
+39 0 15
 
+fertilizer-to-water map:
+49 53 8
+0 11 42
+42 0 7
+57 7 4
 
+water-to-light map:
+88 18 7
+18 25 70
 
-    return None
+light-to-temperature map:
+45 77 23
+81 45 19
+68 64 13
 
+temperature-to-humidity map:
+0 69 1
+1 0 69
+
+humidity-to-location map:
+60 56 37
+56 93 4''')
+
+    assert data[0].startswith('seeds:')
+    seeds = tuple(int(x) for x in data[0].split(':')[1].split())
+    del data[0]
+    maps = []
+    curmap = None
+    for s in data:
+        if 'map:' in s:
+            curmap = []
+            maps.append(curmap)
+        else:
+            vals = tuple(int(x) for x in s.split())
+            assert len(vals) == 3
+            curmap.append(vals)
+
+    def mapstep(x, curmap):
+        for dest, src, rlen in curmap:
+            if src <= x < src + rlen:
+                return dest + x - src
+        return x
+
+    def intersect_range(x, xlen, y, ylen):
+        r = max(x, y)
+        rend = min(x + xlen, y + ylen)
+        if rend <= r:
+            return None, None
+        return r, rend - r
+
+    def mapstep2(x, xlen, curmap):
+        ranges = []
+        srcranges = []
+        for dest, src, rlen in curmap:
+            r, rlen = intersect_range(x, xlen, src, rlen)
+            if r is None: continue
+            srcranges.append((r, rlen))
+            ranges.append((dest + r - src, rlen))
+
+        curx = x
+        for r, rlen in sorted(srcranges):
+            if r - curx > 0:
+                ranges.append((curx, r - curx))
+            curx = r + rlen
+        if curx < x + xlen:
+            ranges.append((curx, x + xlen - curx))
+
+        return ranges
+
+    if not second:
+        for curmap in maps:
+            seeds = [mapstep(x, curmap) for x in seeds]
+        return min(seeds)
+
+    seeds = list(grouper(seeds, 2))
+    for curmap in maps:
+        seeds = [y for x in seeds for y in mapstep2(*x, curmap)]
+        # print(seeds)
+    return min(x for (x, _) in seeds)
 
 
 #########
