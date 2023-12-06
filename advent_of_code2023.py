@@ -261,6 +261,30 @@ humidity-to-location map:
     return min(x for (x, _) in seeds)
 
 
+def problem6(data, second):
+    _data = split_data('''Time:      7  15   30
+Distance:  9  40  200''')
+    def parse(prefix, s):
+        raw = removeprefix(prefix, s).split()
+        if second:
+            return [int(''.join(raw))]
+        return [int(s) for s in raw]
+    times = parse('Time:', data[0])
+    distances = parse('Distance:', data[1])
+
+    def ways(time, distance):
+        res = 0
+        for charge in range(0, time + 1):
+            dst = charge * (time - charge)
+            if dst > distance:
+                # print(time, distance, charge)
+                res += 1
+        # print(time, distance, res)
+        return res
+
+    return functools.reduce(operator.mul, (ways(t, d) for t, d in zip(times, distances)))
+
+
 #########
 
 def problem(data, second):

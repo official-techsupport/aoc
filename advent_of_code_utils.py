@@ -28,6 +28,12 @@ quiet = True
 from retokenizer import ReTokenizer
 
 
+def removeprefix(prefix, s):
+    res = s.removeprefix(prefix)
+    assert res != s, f'removeprefix({prefix!r}, {s!r})'
+    return res
+
+
 def random_shuffle(lst):
     return random.sample(lst, len(lst))
 
