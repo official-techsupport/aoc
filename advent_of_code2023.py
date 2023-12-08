@@ -285,6 +285,47 @@ Distance:  9  40  200''')
     return functools.reduce(operator.mul, (ways(t, d) for t, d in zip(times, distances)))
 
 
+def problem8(data, second):
+    _data = split_data('''LR
+
+11A = (11B, XXX)
+11B = (XXX, 11Z)
+11Z = (11B, XXX)
+22A = (22B, XXX)
+22B = (22C, 22C)
+22C = (22Z, 22Z)
+22Z = (22B, 22B)
+XXX = (XXX, XXX)''')
+
+    moves = data[0]
+    nodes = {}
+    for s in data[1:]:
+        src, dst = s.split('=')
+        dst = dst.strip('() ')
+        dst1, dst2 = dst.split(',')
+        nodes[src.strip()] = (dst1.strip(), dst2.strip())
+
+    if not second:
+        cur = 'AAA'
+        for steps, c in enumerate(itertools.cycle(moves)):
+            cur = nodes[cur][0 if c == 'L' else 1]
+            if cur == 'ZZZ':
+                break
+        return steps + 1
+
+    arr = []
+    for start in nodes.keys():
+        if start.endswith('A'):
+            cur = start
+            for steps, c in enumerate(itertools.cycle(moves)):
+                if cur.endswith('Z'):
+                    break
+                cur = nodes[cur][0 if c == 'L' else 1]
+            arr.append(steps)
+
+    return math.lcm(*arr)
+
+
 #########
 
 def problem(data, second):
