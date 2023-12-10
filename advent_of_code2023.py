@@ -326,6 +326,39 @@ XXX = (XXX, XXX)''')
     return math.lcm(*arr)
 
 
+def problem9(data, second):
+    _data = split_data('''
+0 3 6 9 12 15
+1 3 6 10 15 21
+10 13 16 21 30 45
+''')
+
+    def derive(lst):
+        return [b - a for a, b in pairwise(lst)]
+
+    def extrapolate(lst):
+        res = [lst]
+        while any(lst):
+            lst = derive(lst)
+            res.append(lst)
+        return res
+
+    res = 0
+    for s in data:
+        lst = list(map(int, s.split()))
+        stack = extrapolate(lst)
+
+        if second:
+            for i in reversed(range(len(stack) - 1)):
+                stack[i].append(stack[i][0] - stack[i + 1][-1])
+        else:
+            for i in reversed(range(len(stack) - 1)):
+                stack[i].append(stack[i][-1] + stack[i + 1][-1])
+        res += stack[0][-1]
+
+    return res
+
+
 #########
 
 def problem(data, second):
