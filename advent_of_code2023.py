@@ -285,6 +285,47 @@ Distance:  9  40  200''')
     return functools.reduce(operator.mul, (ways(t, d) for t, d in zip(times, distances)))
 
 
+def problem7(data, second):
+    _data = split_data('''32T3K 765
+T55J5 684
+KK677 28
+KTJJT 220
+QQQJA 483''')
+
+    def hand_type(hand):
+        if second and any(hand):
+            [[top, _]] = Counter(filter(None, hand)).most_common(1)
+            hand = [top if not c else c for c in hand]
+
+        d = Counter(hand)
+        if len(d) == 1:
+            return 7
+        (_, first), (_, sec) = d.most_common(2)
+        if first == 4:
+            return 6
+        if first == 3 and sec == 2:
+            return 5
+        if first == 3:
+            return 4
+        if first == 2 and sec == 2:
+            return 3
+        if first == 2:
+            return 2
+        return 1
+
+    hands = []
+    for s in data:
+        hand, bid = s.split()
+        hand = [('J23456789TQKA' if second else '23456789TJQKA').index(c) for c in hand]
+        t = hand_type(hand)
+        hands.append((t, hand, int(bid)))
+    hands.sort()
+    res = 0
+    for rank0, (t, hand, bid) in enumerate(hands):
+        res += bid * (rank0 + 1)
+    return res
+
+
 def problem8(data, second):
     _data = split_data('''LR
 
@@ -372,5 +413,5 @@ def problem(data, second):
 if __name__ == '__main__':
     print('Hello')
     # solve_all()
-    # solve_latest(15)
+    # solve_latest(7)
     solve_latest()
