@@ -400,6 +400,99 @@ def problem9(data, second):
     return res
 
 
+def problem10(data, second):
+    data = split_data('''
+.....
+.S-7.
+.|.|.
+.L-J.
+.....
+''')
+    if second: return
+    g = networkx.Graph()
+
+    def add_edge(row, col, dir):
+        rc = row, col
+        if dir == 0:
+            g.add_edge(rc, (row - 1, col))
+        if dir == 1:
+            g.add_edge(rc, (row, col + 1))
+        if dir == 2:
+            g.add_edge(rc, (row + 1, col))
+        if dir == 3:
+            g.add_edge(rc, (row, col - 1))
+
+
+    start = None
+
+    for row, s in enumerate(data):
+        for col, c in enumerate(s):
+            if c == '|':
+                add_edge(row, col, 0)
+                add_edge(row, col, 2)
+            if c == '-':
+                add_edge(row, col, 1)
+                add_edge(row, col, 3)
+            if c == 'L':
+                add_edge(row, col, 0)
+                add_edge(row, col, 1)
+            if c == 'J':
+                add_edge(row, col, 0)
+                add_edge(row, col, 3)
+            if c == '7':
+                add_edge(row, col, 2)
+                add_edge(row, col, 3)
+            if c == 'F':
+                add_edge(row, col, 2)
+                add_edge(row, col, 1)
+            if c == "S":
+                start = (row, col)
+
+
+    for dir1 in range(4):
+        for dir2 in range(4):
+            if dir2 <= dir1: continue
+            oldg = g.copy()
+            addco
+
+    print(g, 'hey hey hey')
+    return None
+
+
+def problem11(data, second):
+    _data = split_data('''
+...#......
+.......#..
+#.........
+..........
+......#...
+.#........
+.........#
+..........
+.......#..
+#...#.....''')
+    g = ndarray_from_chargrid(data)
+    empty_rows = []
+    for i, s in enumerate(g):
+        if all(c == '.' for c in s):
+            empty_rows.append(i)
+    empty_cols = []
+    for i, s in enumerate(g.transpose()):
+        if all(c == '.' for c in s):
+            empty_cols.append(i)
+    galaxies = np.argwhere(g == '#')
+
+    res = 0
+    for a in galaxies:
+        for b in galaxies:
+            extra = sum(a[0] <= r <= b[0] for r in empty_rows)
+            extra += sum(a[1] <= r <= b[1] for r in empty_cols)
+            res += abs(a[0] - b[0]) + abs(a[1] - b[1]) + extra * ((1000000 * 2 - 2) if second else 2)
+            # the `extra` calculation above is broken half of the time.
+
+    return res // 2
+
+
 #########
 
 def problem(data, second):
