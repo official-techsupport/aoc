@@ -638,30 +638,22 @@ def problem15(data, second):
     if not second:
         return sum(holiday_ash(s) for s in data)
 
-    boxes = [[] for _ in range(256)]
+    boxes = [{} for _ in range(256)]
     for s in data:
         if s.endswith('-'):
             label = s[:-1]
             h = holiday_ash(label)
             box = boxes[h]
-            for i, (c, _) in enumerate(box):
-                if c == label:
-                    del box[i]
-                    break
+            box.pop(label, None)
         else:
             label, f = s.split('=')
             h = holiday_ash(label)
             box = boxes[h]
-            for i, (c, _) in enumerate(box):
-                if c == label:
-                    box[i] = (label, f)
-                    break
-            else:
-                box.append((label, f))
+            box[label] = f
 
     res = 0
     for i, box in enumerate(boxes):
-        for j, (_, f) in enumerate(box):
+        for j, (_, f) in enumerate(box.items()):
             res += (i + 1) * (j + 1) * int(f)
     return res
 
