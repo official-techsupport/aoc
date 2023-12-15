@@ -209,6 +209,7 @@ humidity-to-location map:
     maps = []
     curmap = None
     for s in data:
+        if not s: continue
         if 'map:' in s:
             curmap = []
             maps.append(curmap)
@@ -341,6 +342,7 @@ XXX = (XXX, XXX)''')
     moves = data[0]
     nodes = {}
     for s in data[1:]:
+        if not s: continue
         src, dst = s.split('=')
         dst = dst.strip('() ')
         dst1, dst2 = dst.split(',')
@@ -401,6 +403,7 @@ def problem9(data, second):
 
 
 def problem10(data, second):
+    return
     data = split_data('''
 .....
 .S-7.
@@ -453,7 +456,6 @@ def problem10(data, second):
         for dir2 in range(4):
             if dir2 <= dir1: continue
             oldg = g.copy()
-            addco
 
     print(g, 'hey hey hey')
     return None
@@ -493,6 +495,177 @@ def problem11(data, second):
     return res // 2
 
 
+def problem13(data, second):
+    _data = split_data('''#.##..##.
+..#.##.#.
+##......#
+##......#
+..#.##.#.
+..##..##.
+#.#.##.#.
+
+#...##..#
+#....#..#
+..##..###
+#####.##.
+#####.##.
+..##..###
+#....#..#''')
+
+    def is_mirrored(m):
+        def check(i):
+            cnt = min(i, len(m) - i)
+            assert cnt
+            s = 0
+            for k in range(cnt):
+                s += np.sum(m[i - k - 1] != m[i + k])
+            if s == (1 if second else 0):
+                return i
+        for i in range(1, len(m)):
+            c = check(i)
+            if c: return c
+
+    res = []
+    cnt = 0
+    def process(m):
+        # nonlocal cnt
+        # print(cnt)
+        # print('\n'.join(m))
+        # cnt += 1
+
+        m = ndarray_from_chargrid(m)
+        c = is_mirrored(m.transpose())
+        if c:
+            res.append(c)
+            return
+        c = is_mirrored(m)
+        if c:
+            res.append(c * 100)
+            return
+        assert False
+
+    cur = []
+    for s in data:
+        if not s:
+            process(cur)
+            cur = []
+        else:
+            cur.append(s)
+    process(cur)
+    print(res)
+    return sum(res)
+
+
+def problem14(data, second):
+    _data = split_data('''O....#....
+O.OO#....#
+.....##...
+OO.#O....O
+.O.....O#.
+O.#..O.#.#
+..O..#O..O
+.......O..
+#....###..
+#OO..#....''')
+    data = ndarray_from_chargrid(data)
+
+    def shift():
+        changed = frozenset(range(len(data)))
+        while changed:
+            newchanged = set()
+            for i, s in enumerate(data[1:]):
+                i += 1
+                if i not in changed: continue
+                for x, c in enumerate(s):
+                    if c == 'O' and data[i - 1][x] == '.':
+                        data[i - 1][x] = 'O'
+                        data[i][x] = '.'
+                        newchanged.add(i - 1)
+            changed = newchanged
+
+    def load():
+        res = 0
+        h = len(data)
+        for i, s in enumerate(data):
+            for c in s:
+                if c == 'O':
+                    res += h
+            h -= 1
+        return res
+
+    if not second:
+        shift()
+        return load()
+
+    hashes = {}
+
+    def cycle():
+        nonlocal data
+        for _ in range(4):
+            shift()
+            data = np.rot90(data, -1)
+        return hash(data.tostring())
+
+    target_cycles = 1000000000
+    for c in range(target_cycles):
+        h = cycle()
+        if h in hashes:
+            break
+        hashes[h] = c
+        print(c, len(hashes))
+
+    cycle_len = c - hashes[h]
+    print(cycle_len)
+    target_cycles -= c + 1
+    target_cycles %= cycle_len
+    for c in range(target_cycles):
+        cycle()
+
+    return load()
+
+
+def problem15(data, second):
+    _data = split_data('''rn=1,cm-,qp=3,cm=2,qp-,pc=4,ot=9,ab=5,pc-,pc=6,ot=7''')
+
+    def holiday_ash(s):
+        r = 0
+        for c in s:
+            r += ord(c)
+            r *= 17
+            r %= 256
+        return r
+    data = data.split(',')
+    if not second:
+        return sum(holiday_ash(s) for s in data)
+
+    boxes = [[] for _ in range(256)]
+    for s in data:
+        if s.endswith('-'):
+            label = s[:-1]
+            h = holiday_ash(label)
+            box = boxes[h]
+            for i, (c, _) in enumerate(box):
+                if c == label:
+                    del box[i]
+                    break
+        else:
+            label, f = s.split('=')
+            h = holiday_ash(label)
+            box = boxes[h]
+            for i, (c, _) in enumerate(box):
+                if c == label:
+                    box[i] = (label, f)
+                    break
+            else:
+                box.append((label, f))
+
+    res = 0
+    for i, box in enumerate(boxes):
+        for j, (_, f) in enumerate(box):
+            res += (i + 1) * (j + 1) * int(f)
+    return res
+
+
 #########
 
 def problem(data, second):
@@ -505,6 +678,6 @@ def problem(data, second):
 
 if __name__ == '__main__':
     print('Hello')
+    solve_latest()
     # solve_all()
     # solve_latest(7)
-    solve_latest()

@@ -364,7 +364,7 @@ def utils_init(year, caller_globals):
 
 
 def split_data(s):
-    data = list(filter(None, map(str.strip, s.split('\n'))))
+    data = [s.strip() for s in s.strip().split('\n')]
     if len(data) == 1:
         [data] = data
     return data
