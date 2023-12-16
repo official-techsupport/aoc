@@ -653,9 +653,82 @@ def problem15(data, second):
 
     res = 0
     for i, box in enumerate(boxes):
-        for j, (_, f) in enumerate(box.items()):
+        for j, f in enumerate(box.values()):
             res += (i + 1) * (j + 1) * int(f)
     return res
+
+
+def problem16(data, second):
+    _data = split_data(r'''
+.|...\....
+|.-.\.....
+.....|-...
+........|.
+..........
+.........\
+..../.\\..
+.-.-/..|..
+.|....-|.\
+..//.|....''')
+    m = ndarray_from_chargrid(data)
+    width, height = len(m[0]), len(m)
+
+    def run(start):
+        front = deque([start])
+        visited = set(front)
+        dirs = ((0, 1), (1, 0), (0, -1), (-1, 0)) # start right, go cw
+        # >0 V1 <2 ^3
+
+        while front:
+            row, col, dir = front.popleft()
+            c = m[row, col]
+
+            def add(row, col, dir):
+                dr, dc = dirs[dir]
+                row += dr
+                col += dc
+                if not (0 <= row < height and 0 <= col < height):
+                    return
+                key = (row, col, dir)
+                if key in visited:
+                    return
+                front.append(key)
+                visited.add(key)
+
+            if c == '.':
+                add(row, col, dir)
+            elif c == '\\':
+                # >0 V1 <2 ^3
+                dir = {0: 1, 1: 0, 2: 3, 3: 2}[dir]
+                add(row, col, dir)
+            elif c == '/':
+                dir = {0: 3, 1: 2, 2: 1, 3: 0}[dir]
+                add(row, col, dir)
+            elif c in '|-':
+                if (c == '|' and dir in (1, 3)) or (c == '-' and dir in (0, 2)):
+                    add(row, col, dir)
+                else:
+                    add(row, col, (dir + 1) % 4)
+                    add(row, col, (dir + 3) % 4)
+            else:
+                assert False
+
+        mapvisited = {(row, col) for row, col, dir in visited}
+        return len(mapvisited)
+
+    starts = []
+    if not second:
+        starts.append((0, 0, 0))
+    else:
+        for row in range(height):
+            starts.append((row, 0, 0))
+            starts.append((row, width - 1, 2))
+        for col in range(width):
+            starts.append((0, col, 1))
+            starts.append((height - 1, col, 3))
+
+    return max(run(s) for s in starts)
+
 
 
 #########
@@ -663,6 +736,7 @@ def problem15(data, second):
 def problem(data, second):
     data = split_data(''' ''')
     if second: return
+
     return None
 
 
