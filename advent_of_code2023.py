@@ -687,7 +687,7 @@ def problem16(data, second):
                 dr, dc = dirs[dir]
                 row += dr
                 col += dc
-                if not (0 <= row < height and 0 <= col < height):
+                if not (0 <= row < height and 0 <= col < width):
                     return
                 key = (row, col, dir)
                 if key in visited:
@@ -730,6 +730,72 @@ def problem16(data, second):
     return max(run(s) for s in starts)
 
 
+def problem17(data, second):
+    _data = split_data('''
+2413432311323
+3215453535623
+3255245654254
+3446585845452
+4546657867536
+1438598798454
+4457876987766
+3637877979653
+4654967986887
+4564679986453
+1224686865563
+2546548887735
+4322674655533''')
+
+    _data = split_data('''
+111111111111
+999999999991
+999999999991
+999999999991
+999999999991''')
+
+    m = ndarray_from_chargrid(data)
+    m = m.astype(int)
+    width, height = len(m[0]), len(m)
+
+    # dir: 0> 1^ 2< 3V
+    dirs = ((0, 1), (-1, 0), (0, -1), (1, 0))
+
+    start_keys = [((0, 0), 0, 0), ((0, 0), 3, 0)]
+    visited = {k: 0 for k in start_keys}
+    front = deque(visited.keys())
+
+    def add(score, pos, dir, rl):
+        dir %= 4
+        pos = addv2(pos, dirs[dir])
+        row, col = pos
+        if not (0 <= row < height and 0 <= col < width):
+            return
+        key = pos, dir, rl
+        score += m[pos]
+        if visited.get(key, 999999999) <= score:
+            return
+        visited[key] = score
+        front.append(key)
+
+    while front:
+        pos, dir, rl = key = front.popleft()
+        score = visited[key]
+        if not second or rl >= 3:
+            add(score, pos, dir - 1, 0)
+            add(score, pos, dir + 1, 0)
+        if rl < (9 if second else 2):
+            add(score, pos, dir, rl + 1)
+
+    # print(height, width)
+    # mapscores = {}
+    # for (pos, dir, rl), score in visited.items():
+    #     if mapscores.get(pos, 999999999) > score:
+    #         mapscores[pos] = score
+    # print(mapscores)
+    return min(score for ((row, col), dir, rl), score in visited.items()
+               if row == height - 1 and col == width - 1 and rl >= (3 if second else 0))
+
+
 
 #########
 
@@ -746,4 +812,4 @@ if __name__ == '__main__':
     print('Hello')
     solve_latest()
     # solve_all()
-    # solve_latest(7)
+    # solve_latest(16)
