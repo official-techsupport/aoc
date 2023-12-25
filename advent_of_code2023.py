@@ -403,16 +403,17 @@ def problem9(data, second):
 
 
 def problem10(data, second):
-    return
-    data = split_data('''
-.....
-.S-7.
-.|.|.
-.L-J.
-.....
-''')
-    if second: return
-    g = networkx.Graph()
+    _data = split_data('''
+...........
+.S-------7.
+.|F-----7|.
+.||OOOOO||.
+.||OOOOO||.
+.|L-7OF-J|.
+.|II|O|II|.
+.L--JOL--J.
+.....O.....''')
+    g = networkx.DiGraph()
 
     def add_edge(row, col, dir):
         rc = row, col
@@ -433,32 +434,77 @@ def problem10(data, second):
             if c == '|':
                 add_edge(row, col, 0)
                 add_edge(row, col, 2)
-            if c == '-':
+            elif c == '-':
                 add_edge(row, col, 1)
                 add_edge(row, col, 3)
-            if c == 'L':
+            elif c == 'L':
                 add_edge(row, col, 0)
                 add_edge(row, col, 1)
-            if c == 'J':
+            elif c == 'J':
                 add_edge(row, col, 0)
                 add_edge(row, col, 3)
-            if c == '7':
+            elif c == '7':
                 add_edge(row, col, 2)
                 add_edge(row, col, 3)
-            if c == 'F':
+            elif c == 'F':
                 add_edge(row, col, 2)
                 add_edge(row, col, 1)
-            if c == "S":
+            elif c == 'S':
                 start = (row, col)
+            elif c in '.IO':
+                pass
+            else:
+                assert False
 
+    gclean = networkx.Graph()
+    for src, dst in g.edges:
+        if (dst, src) in g.edges:
+            gclean.add_edge(src, dst)
 
-    for dir1 in range(4):
-        for dir2 in range(4):
-            if dir2 <= dir1: continue
-            oldg = g.copy()
+    assert len(g.in_edges(start)) == 2
+    for e in g.in_edges(start):
+        gclean.add_edge(*e)
 
-    print(g, 'hey hey hey')
-    return None
+    g = gclean
+
+    for c in networkx.connected_components(g):
+        if start in c:
+            break
+    else:
+        assert False
+
+    if not second:
+        return networkx.eccentricity(g.subgraph(c), start)
+
+    m = ndarray_from_chargrid(data)
+    for i, row in enumerate(m):
+        for j in range(len(row)):
+            if (i, j) not in c:
+                row[j] = '.'
+            if row[j] == 'S':
+                # fixup manually depending on input
+                # row[j] = 'F'
+                row[j] = '|'
+
+    counter = 0
+    for row in m:
+        inside = False
+        prev = None
+        for c in row:
+            if c == '.' and inside:
+                counter += 1
+            elif c == '|':
+                inside = not inside
+            elif c in 'FL':
+                prev = c
+            elif c == '7':
+                if prev == 'L':
+                    inside = not inside
+            elif c == 'J':
+                if prev == 'F':
+                    inside = not inside
+
+    return counter
 
 
 def problem11(data, second):
@@ -493,6 +539,55 @@ def problem11(data, second):
             # the `extra` calculation above is broken half of the time.
 
     return res // 2
+
+
+def problem12(data, second):
+    _data = split_data('''
+???.### 1,1,3
+.??..??...?##. 1,1,3
+?#?#?#?#?#?#?#? 1,3,1,6
+????.#...#... 4,1,1
+????.######..#####. 1,6,5
+?###???????? 3,2,1''')
+    def count_ways(pat, groups):
+        @functools.cache
+        def rec(pat_idx, group_idx):
+            if pat_idx >= len(pat):
+                if group_idx < len(groups):
+                    return 0
+                return 1
+
+            ways = 0
+            if pat[pat_idx] in '?.':
+                # skip one
+                ways = rec(pat_idx + 1, group_idx)
+
+            # start group here
+            if group_idx >= len(groups):
+                return ways
+            glen = groups[group_idx]
+            if pat_idx + glen > len(pat):
+                return ways
+            for i in range(glen):
+                if pat[pat_idx + i] not in '?#':
+                    return ways
+            if pat_idx + glen < len(pat):
+                if pat[pat_idx + glen] not in '?.':
+                    return ways
+            return ways + rec(pat_idx + glen + 1, group_idx + 1)
+        return rec(0, 0)
+
+    total = 0
+    for s in data:
+        pat, groups = s.split()
+        groups = [int(g) for g in groups.split(',')]
+        if second:
+            pat = '?'.join([pat] * 5)
+            groups = groups * 5
+        ways = count_ways(pat, groups)
+        total += ways
+        # print(pat, groups, ways)
+    return total
 
 
 def problem13(data, second):
@@ -786,15 +881,511 @@ def problem17(data, second):
         if rl < (9 if second else 2):
             add(score, pos, dir, rl + 1)
 
-    # print(height, width)
-    # mapscores = {}
-    # for (pos, dir, rl), score in visited.items():
-    #     if mapscores.get(pos, 999999999) > score:
-    #         mapscores[pos] = score
-    # print(mapscores)
     return min(score for ((row, col), dir, rl), score in visited.items()
                if row == height - 1 and col == width - 1 and rl >= (3 if second else 0))
 
+
+def problem18(data, second):
+    _data = split_data('''
+R 6 (#70c710)
+D 5 (#0dc571)
+L 2 (#5713f0)
+D 2 (#d2c081)
+R 2 (#59c680)
+D 2 (#411b91)
+L 5 (#8ceee2)
+U 2 (#caa173)
+L 1 (#1b58a2)
+U 2 (#caa171)
+R 2 (#7807d2)
+U 3 (#a77fa3)
+L 2 (#015232)
+U 2 (#7a21e3)''')
+    if second: return
+
+    dd = []
+    for s in data:
+        d, l, c = s.split()
+        dd.append((d, int(l)))
+
+    dd2 = []
+    for d, l in dd:
+        if d == 'R':
+            x = (0, l)
+        elif d == 'D':
+            x = (l, 0)
+        elif d == 'L':
+            x = (0, -l)
+        elif d == 'U':
+            x = (-l, 0)
+        else:
+            assert False
+        dd2.append(x)
+
+    x, y = 0, 0
+    minx, maxx, miny, maxy = 999999, -999999, 999999, -999999
+    for dy, dx in dd2:
+        x += dx
+        y += dy
+        minx = min(minx, x)
+        maxx = max(maxx, x)
+        miny = min(miny, y)
+        maxy = max(maxy, y)
+
+    maxx += 1
+    maxy += 1
+
+    m = np.ndarray((maxy - miny, maxx - minx), dtype='U1')
+    m[:] = '.'
+    x, y = -minx, -miny
+    for dy, dx in dd2:
+        while dx:
+            m[y, x] = '#'
+            x += np.sign(dx)
+            dx -= np.sign(dx)
+        while dy:
+            m[y, x] = '#'
+            y += np.sign(dy)
+            dy -= np.sign(dy)
+
+    front = deque([(-minx + 1, -miny + 1)])
+    while front:
+        x, y = front.popleft()
+        if m[y, x] != '.':
+            continue
+        m[y, x] = '#'
+        for dx, dy in ((0, 1), (-1, 0), (0, -1), (1, 0)):
+            front.append((x + dx, y + dy))
+
+    print(m)
+    # print('\n'.join(''.join(c) for c in s for s in m))
+
+    return np.sum(m == '#')
+
+
+def problem19(data, second):
+    _data = split_data('''
+px{a<2006:qkq,m>2090:A,rfg}
+pv{a>1716:R,A}
+lnx{m>1548:A,A}
+rfg{s<537:gd,x>2440:R,A}
+qs{s>3448:A,lnx}
+qkq{x<1416:A,crn}
+crn{x>2662:A,R}
+in{s<1351:px,qqz}
+qqz{s>2770:qs,m<1801:hdj,R}
+gd{a>3333:R,R}
+hdj{m>838:A,pv}
+
+{x=787,m=2655,a=1222,s=2876}
+{x=1679,m=44,a=2067,s=496}
+{x=2036,m=264,a=79,s=2244}
+{x=2461,m=1339,a=466,s=291}
+{x=2127,m=1623,a=2188,s=1013}''')
+    if second: return
+
+    def partition(s):
+        m = next(re.finditer('<|>', s))
+        idx = m.start()
+        return s[0:idx], s[idx], s[idx + 1:]
+
+    rules = {}
+    for idx, s in enumerate(data):
+        if not s:
+            break
+        name, rest = s.split('{')
+        rest = rest.strip('}')
+        conds = rest.split(',')
+        rule = []
+        rules[name] = rule
+        for c in conds:
+            if ':' in c:
+                cond, dst = c.split(':')
+                var, cond, val = partition(cond)
+            else:
+                dst = c
+                var, cond, val = '1', '>', '0'
+            assert cond in '<>'
+            if cond == '<':
+                cond = operator.lt
+            else:
+                cond = operator.gt
+            rule.append((var, cond, int(val), dst))
+
+    # print(rules)
+    items = []
+    for s in data[idx + 1:]:
+        s = s.strip('{}')
+        it = {}
+        items.append(it)
+        for ss in s.split(','):
+            k, v = ss.split('=')
+            it[k] = int(v)
+
+    accepted = []
+    for part in items:
+        part['1'] = 1
+        cur = 'in'
+        while cur:
+            if cur == 'A':
+                accepted.append(part)
+                break
+            elif cur == 'R':
+                break
+
+            flow = rules[cur]
+            for var, cond, val, dst in flow:
+                if cond(part[var], val):
+                    cur = dst
+                    break
+            else:
+                assert False
+
+    res = 0
+    for it in accepted:
+        del it['1']
+        res += sum(it.values())
+    if not second:
+        return res
+
+
+def problem20(data, second):
+    _data = split_data('''
+broadcaster -> a, b, c
+%a -> b
+%b -> c
+%c -> inv
+&inv -> a''')
+    _data = split_data('''
+broadcaster -> a
+%a -> inv, con
+&inv -> b
+%b -> con
+&con -> output''')
+
+    class Module:
+        type: str
+        outputs: list[str]
+        inputs: dict
+        state = 0
+
+    modules = {}
+    for s in data:
+        name, _, outputs = s.partition(' -> ')
+        assert outputs
+        m = Module()
+        if name[0] in '%&':
+            m.type = name[0]
+            modules[name[1:]] = m
+        else:
+            assert name == 'broadcaster'
+            m.type = 'b'
+            modules[name] = m
+        m.outputs = [s.strip() for s in outputs.split(',')]
+        m.inputs = {}
+
+    extras = []
+    for name, m in modules.items():
+        for m2 in m.outputs:
+            if m2 not in modules:
+                extras.append(m2)
+            else:
+                modules[m2].inputs[name] = 0
+
+    # print(extras)
+    for mname in extras:
+        modules[mname] = m = Module()
+        m.type = 'o'
+        m.outputs = []
+        m.inputs = {}
+
+    pulsescnt = defaultdict(int)
+
+    for press in range(100000000 if second else 1000):
+        signals = deque()
+        signals.append(('button', 'broadcaster', 0))
+        while signals:
+            src, dst, level = signals.popleft()
+            # print(f'{src} -{"high" if level else "low"}-> {dst}')
+            pulsescnt[level] += 1
+            if second and dst == 'rx' and not level:
+                return press + 1
+
+            m = modules[dst]
+            if m.type == '%':
+                if level: continue
+                m.state = not m.state
+                for out in m.outputs:
+                    signals.append((dst, out, m.state))
+            elif m.type == '&':
+                # print('!!!', m.inputs, level)
+                m.inputs[src] = level
+                outlevel = not all(m.inputs.values())
+                for out in m.outputs:
+                    signals.append((dst, out, outlevel))
+            elif m.type == 'b':
+                for out in m.outputs:
+                    signals.append((dst, out, level))
+            elif m.type == 'o':
+                pass
+            else:
+                assert False
+
+    print(pulsescnt)
+    return pulsescnt[0] * pulsescnt[1]
+
+
+def problem21(data, second):
+    _data = split_data('''...........
+.....###.#.
+.###.##..#.
+..#.#...#..
+....#.#....
+.##..S####.
+.##..#...#.
+.......##..
+.##.#.####.
+.##..##.##.
+...........''')
+    m = ndarray_from_chargrid(data)
+    width, height = len(m[0]), len(m)
+    [[start_row], [start_col]] = np.where(m == 'S')
+
+    if not second:
+        front = [(start_row, start_col)]
+        for step in range(64):
+            new_front = []
+            visited = set()
+            while front:
+                row, col = pos = front.pop()
+
+                for dr, dc in ((0, 1), (-1, 0), (0, -1), (1, 0)):
+                    nrow = row + dr
+                    ncol = col + dc
+                    if not (0 <= nrow < height and 0 <= ncol < width):
+                        continue
+                    npos = (nrow, ncol)
+                    if npos in visited:
+                        continue
+                    if m[npos] == '#':
+                        continue
+                    new_front.append(npos)
+                    visited.add(npos)
+            front = new_front
+            m1 = np.copy(m)
+            for rc in visited:
+                m1[rc] = 'O'
+            # print(step)
+            # print(m1)
+            # print()
+        return len(visited)
+
+    ### Second
+    front = [(start_row, start_col)]
+    visited = {}
+    for step in range(6400):
+        new_front = []
+        while front:
+            row, col = front.pop()
+
+            for dr, dc in ((0, 1), (-1, 0), (0, -1), (1, 0)):
+                nrow = row + dr
+                ncol = col + dc
+                npos = (nrow, ncol)
+                if not (0 <= nrow < height and 0 <= ncol < width):
+                    continue
+                if npos in visited:
+                    continue
+                if m[npos] == '#':
+                    continue
+                visited[npos] = step + 1
+                new_front.append(npos)
+        front = new_front
+    mv = np.zeros_like(m, int)
+    for pos, step in visited.items():
+        mv[pos] = step
+    print(m.shape)
+    print(26501365 - (26501365 // 131 * 131))
+
+
+def problem22(data, second):
+    data = split_data('''
+1,0,1~1,2,1
+0,0,2~2,0,2
+0,2,3~2,2,3
+0,0,4~0,2,4
+2,0,5~2,2,5
+0,1,6~2,1,6
+1,1,8~1,1,9''')
+    if second: return
+
+    bricks = []
+    for s in data:
+        xyz1, _, xyz2 = s.partition('~')
+        def parse(s):
+            return list(map(int, s.split(',')))
+        bricks.append((parse(xyz1), parse(xyz2)))
+
+    # for (x1,y1,z1), (x2,y2,z2) in bricks:
+    #     assert x1 < 10, x2 < 10
+
+    def sort_key(b):
+        return min(b[0][2], b[1][2])
+    bricks.sort(key=sort_key)
+
+    m = np.zeros((3, 3, 10), np.int8)
+
+    def brick_range(a, b):
+        if b > a:
+            return range(a, b + 1)
+        return range(b, a + 1)
+
+    for idx, ((x1,y1,z1), (x2,y2,z2)) in enumerate(bricks):
+        # print(m)
+        h = 0
+        for x in brick_range(x1, x2):
+            for y in brick_range(y1, y2):
+                pos_h = np.where(m[x, y])[0].max(initial=-1) + 1
+                h = max(h, pos_h)
+
+
+        minz = min(z1, z2)
+        z1 = bricks[idx][0][2] = bricks[idx][0][2] + h - minz
+        z2 = bricks[idx][1][2] = bricks[idx][1][2] + h - minz
+
+        for x in brick_range(x1, x2):
+            for y in brick_range(y1, y2):
+                for z in brick_range(z1, z2):
+                    assert not m[x, y, z]
+                    m[x, y, z] = idx + 1
+
+    print(m)
+    return
+    # print(bricks)
+    disintegratable = 0
+    supports = defaultdict(set)
+    for idx, ((x1,y1,z1), (x2,y2,z2)) in enumerate(bricks):
+        if idx == 6:
+            ...
+        minz = min(z1, z2)
+        if minz == 0:
+            continue
+        for x in brick_range(x1, x2):
+            for y in brick_range(y1, y2):
+                below = x, y, minz - 1
+                if m[below]:
+                    supports[m[below]].add(idx)
+    print('bricks', bricks)
+    print('supports', supports)
+
+    for b, s in supports.items():
+        print(b, s)
+
+    disintegratable = len(bricks) - sum(1 for x in supports.values() if len(x) >= 2)
+    return disintegratable
+
+
+def problem24(data, second):
+    _data = split_data('''19, 13, 30 @ -2,  1, -2
+18, 19, 22 @ -1, -1, -2
+20, 25, 34 @ -2, -2, -4
+12, 31, 28 @ -1, -2, -1
+20, 19, 15 @  1, -5, -3''')
+    positions = np.zeros((len(data), 3), object)
+    directions = np.copy(positions)
+    for i, s in enumerate(data):
+        ss = [s1.strip(',') for s1 in s.split()]
+        positions[i][0] = int(ss[0])
+        positions[i][1] = int(ss[1])
+        positions[i][2] = int(ss[2])
+        directions[i][0] = int(ss[4])
+        directions[i][1] = int(ss[5])
+        directions[i][2] = int(ss[6])
+
+    def line_intersection(pos1, dir1, pos2, dir2):
+        xdiff = dir1[0], dir2[0]
+        ydiff = dir1[1], dir2[1]
+
+        def det(a, b):
+            return a[0] * b[1] - a[1] * b[0]
+
+        div = det(xdiff, ydiff)
+        if div == 0:
+            return None, None
+
+        d = det(pos1, addv2(pos1, dir1)), det(pos2, addv2(pos2, dir2))
+        x = det(d, xdiff) / div
+        y = det(d, ydiff) / div
+        return -x, -y
+
+    if not second:
+        within = 0
+        ta1, ta2 = 200000000000000, 400000000000000
+        # ta1, ta2 = 7, 27
+        for i in range(len(positions)):
+            for j in range(i + 1, len(positions)):
+                ix, iy = line_intersection(positions[i], directions[i], positions[j], directions[j])
+                if ix is not None:
+                    future1 = (ix - positions[i][0]) * directions[i][0] + (iy - positions[i][1]) * directions[i][1]
+                    future2 = (ix - positions[j][0]) * directions[j][0] + (iy - positions[j][1]) * directions[j][1]
+                else:
+                    future1 = 0
+                    future2 = 0
+                # print(positions[i], positions[j])
+                # print(ix, iy, future1 > 0 and future2 > 0)
+                if future1 > 0 and future2 > 0 and ta1 <= ix <= ta2 and ta1 <= iy <= ta2:
+                    within += 1
+                    # print('yayyyy')
+
+        return within
+
+    import z3
+    x, y, z = z3.Ints('x y z')
+    dx, dy, dz = z3.Ints('dx dy dz')
+    zs = z3.Solver()
+    for i in range(len(positions)):
+        t = z3.Int(f't{i}')
+        zs.add(t >= 0)
+        zs.add(positions[i][0] + t * directions[i][0] == x + t * dx)
+        zs.add(positions[i][1] + t * directions[i][1] == y + t * dy)
+        zs.add(positions[i][2] + t * directions[i][2] == z + t * dz)
+
+    assert zs.check() == z3.sat
+    return zs.model().eval(x + y + z).as_long()
+
+
+def problem25(data, second):
+    _data = split_data('''
+jqt: rhn xhk nvd
+rsh: frs pzl lsr
+xhk: hfx
+cmg: qnr nvd lhk bvb
+rhn: xhk bvb hfx
+bvb: xhk hfx
+pzl: lsr hfx nvd
+qnr: nvd
+ntq: jqt hfx bvb xhk
+nvd: lhk
+lsr: lhk
+rzs: qnr cmg lsr rsh
+frs: qnr lhk lsr''')
+    if second: return
+    nx = networkx
+    g = nx.Graph()
+    for s in data:
+        n1, ns = s.split(':')
+        for n2 in ns.split():
+            g.add_edge(n1, n2)
+    # nx.draw(g, with_labels=True)
+    # import matplotlib.pyplot as plt
+    # plt.show()
+    assert nx.number_connected_components(g) == 1
+    g.remove_edge('mtq', 'jtr')
+    g.remove_edge('pzq', 'rrz')
+    g.remove_edge('ddj', 'znv')
+    g1, g2 = nx.connected_components(g)
+    return len(g1) * len(g2)
+    return None
 
 
 #########
@@ -810,6 +1401,6 @@ def problem(data, second):
 
 if __name__ == '__main__':
     print('Hello')
-    solve_latest()
+    # solve_latest()
     # solve_all()
-    # solve_latest(16)
+    solve_latest(12)

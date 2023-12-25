@@ -3,3 +3,5 @@ networkx
 requests
 z3-solver
 setuptools
+matplotlib
+scipy
