@@ -11,6 +11,7 @@ from heapq import heappush, heappop, heapify
 from contextlib import contextmanager
 import copy, math, cmath, random, operator
 import itertools, re, functools, shutil, errno, sys, time, hashlib, json, ast, string
+from itertools import pairwise
 import requests
 import numpy as np
 import networkx
@@ -62,13 +63,6 @@ def grouper(iterable, n, fillvalue=None):
     # grouper('ABCDEFG', 3, 'x') --> ABC DEF Gxx"
     args = [iter(iterable)] * n
     return itertools.zip_longest(*args, fillvalue=fillvalue)
-
-
-def pairwise(iterable):
-    "s -> (s0,s1), (s1,s2), (s2, s3), ..."
-    a, b = itertools.tee(iterable)
-    next(b, None)
-    return zip(a, b)
 
 
 def product_up_to(n: int, k: int):
