@@ -78,6 +78,71 @@ def problem3(data, second):
     return res
 
 
+def problem4(data, second):
+    # if second: return
+    _data = split_data('''
+MMMSXXMASM
+MSAMXMSMSA
+AMXSXMAAMM
+MSAMASMSMX
+XMASAMXAMM
+XXAMMXXAMA
+SMSMSASXSS
+SAXAMASAAA
+MAMMMXMMMM
+MXMXAXMASX''')
+    height = len(data)
+    width = len(data[0])
+    assert all(len(row) == width for row in data)
+
+    def get(pos):
+        row, col = pos
+        if 0 <= row < height and 0 <= col < width:
+            return data[row][col]
+        return ''
+
+    visited = set()
+    query = 'XMAS'
+    def rec(pos, d, idx, path=[]):
+        if idx >= len(query):
+            visited.update(path)
+            return True
+        path = path + [pos]
+        if get(pos) != query[idx]:
+            return False
+        return rec(addv2(pos, d), d, idx + 1, path)
+
+    occurs = 0
+    if not second:
+        for row in range(height):
+            for col in range(width):
+                for d in directions8:
+                    occurs += rec((row, col), d, 0)
+        return occurs
+
+    query = 'MAS'
+    for row in range(height):
+        for col in range(width):
+            pos = (row, col)
+            found = 0
+            for d in ((-1, -1), (1, 1)):
+                found += rec(addv2(pos, d), mulv2s(d, -1), 0)
+            if not found:
+                continue
+            found = 0
+            for d in ((-1, 1), (1, -1)):
+                found += rec(addv2(pos, d), mulv2s(d, -1), 0)
+            if found:
+                occurs += 1
+    return occurs
+
+    # data2 = [list(s) for s in data]
+    # for row in range(height):
+    #     for col in range(width):
+    #         if (row, col) not in visited:
+    #             data2[row][col] = ' '
+    # print('\n'.join(''.join(row) for row in data2))
+
 #########
 
 def problem(data, second):

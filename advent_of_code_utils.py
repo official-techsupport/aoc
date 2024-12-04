@@ -210,6 +210,7 @@ Vector2 = Tuple[int, int]
 
 # cw starting from north, y points down.
 directions4 = ((0, -1), (1, 0), (0, 1), (-1, 0))
+directions8 = ((0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1))
 # for dx, dy in directions4:
 #     nx, ny = x + dx, y + dy
 
