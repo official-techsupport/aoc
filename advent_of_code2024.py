@@ -146,10 +146,8 @@ MXMXAXMASX''')
 #########
 
 def problem(data, second):
-    data = split_data(''' ''')
     if second: return
-
-    return None
+    data = split_data(''' ''')
 
 
 ##########
