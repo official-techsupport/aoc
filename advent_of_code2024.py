@@ -143,6 +143,89 @@ MXMXAXMASX''')
     #             data2[row][col] = ' '
     # print('\n'.join(''.join(row) for row in data2))
 
+
+def problem5(data, second):
+    _data = split_data('''
+47|53
+97|13
+97|61
+97|47
+75|29
+61|13
+75|53
+29|13
+97|29
+53|29
+61|53
+97|53
+61|29
+47|13
+75|47
+97|75
+47|61
+75|61
+47|29
+75|13
+53|13
+
+75,47,61,53,29
+97,61,53,29,13
+75,29,13
+75,97,47,61,53
+61,13,29
+97,13,75,29,47
+''')
+    before = defaultdict(list)
+    data_it = iter(data)
+    for line in data_it:
+        if not line:
+            break
+        a, b = line.split('|')
+        before[int(b)].append(int(a))
+
+    res = []
+    for line in data_it:
+        pgs = [int(p) for p in line.split(',')]
+        good = True
+        for i, p in enumerate(pgs):
+            bef = before[p]
+            for p2 in pgs[i + 1 : ]:
+                if p2 in bef:
+                    good = False
+                    break
+            if not good:
+                break
+        if good:
+            if not second:
+                res.append(pgs)
+            continue
+        if not second:
+            continue
+        while True:
+            fixed = False
+            for i, p in enumerate(pgs):
+                bef = before[p]
+                for j, p2 in enumerate(pgs[i + 1 : ]):
+                    if p2 in bef:
+                        assert p2 == pgs.pop(i + 1 + j)
+                        pgs.insert(i, p2)
+                        fixed = True
+                        break
+                if fixed:
+                    break
+            if not fixed:
+                break
+        res.append(pgs)
+
+    return sum(pgs[len(pgs)//2] for pgs in res)
+
+
+
+
+
+
+
+
 #########
 
 def problem(data, second):
