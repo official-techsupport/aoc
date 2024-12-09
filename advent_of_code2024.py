@@ -220,13 +220,191 @@ def problem5(data, second):
     return sum(pgs[len(pgs)//2] for pgs in res)
 
 
+def problem6(data, second):
+    data = split_data('''
+....#.....
+.........#
+..........
+..#.......
+.......#..
+..........
+.#..^.....
+........#.
+#.........
+......#...''')
+    g = ndarray_from_chargrid(data)
+    height, width = len(g), len(g[0])
+    [pos] = np.argwhere(g == '^')
+    pos = pos[1] + 1j*pos[0]
+    d = -1j
+    obstructions = 0
+    def step(pos, d):
+        nonlocal obstructions
+        pv2 = c2v2(pos)
+        cross = g[pv2] == 'X'
+        g[pv2] = "X"
+        while True:
+            pos2 = pos + d
+            if not (pos2.real in range(width) and pos2.imag in range(height)):
+                return None, None
+            if g[c2v2(pos2)] == '#':
+                d *= 1j
+                continue
+            if cross:
+                print(pos)
+                obstructions += 1
+            break
+        return pos2, d
+    while pos is not None:
+        pos, d = step(pos, d)
+    # print(g)
+    if second:
+        return obstructions
+    return np.sum(g == 'X')
+
+
+def problem7(data, second):
+    # if second: return
+    _data = split_data('''190: 10 19
+3267: 81 40 27
+83: 17 5
+156: 15 6
+7290: 6 8 6 15
+161011: 16 10 13
+192: 17 8 14
+21037: 9 7 18 13
+292: 11 6 16 20''')
+    results = []
+    nums = []
+    for s in data:
+        r, s = s.split(':')
+        s = s.split()
+        results.append(int(r))
+        nums.append([int(it) for it in s])
+
+    def can_get(r, ns):
+        ns = iter(ns)
+        dyn = {next(ns)}
+        for n in ns:
+            newdyn = set()
+            for i in dyn:
+                x = i + n
+                if x <= r: newdyn.add(x)
+                x = i * n
+                if x <= r: newdyn.add(x)
+                if second:
+                    x = int(str(i) + str(n))
+                    if x <= r: newdyn.add(x)
+            dyn = newdyn
+        if r in dyn:
+            return r
+        return False
+
+    return sum(can_get(r, ns) for r, ns in zip(results, nums))
+
+
+def problem8(data, second):
+    # if second: return
+    _data = split_data('''............
+........0...
+.....0......
+.......0....
+....0.......
+......A.....
+............
+............
+........A...
+.........A..
+............
+............''')
+
+    height, width = len(data), len(data[0])
+
+    nodes = defaultdict(list)
+    for row, line in enumerate(data):
+        for col, c in enumerate(line):
+            if c != '.':
+                nodes[c].append(row + 1j*col)
+
+    def antinodes(n1, n2):
+        d = n2 - n1
+        return [n2 + d, n1 - d]
+
+    def antinodes2(n1, n2):
+        d = n2 - n1
+        def go(p, d):
+            while 0 <= p.real < height and 0 <= p.imag < width:
+                yield p
+                p += d
+        yield from go(n2, d)
+        yield from go(n1, -d)
+
+    res = set()
+    f = antinodes2 if second else antinodes
+    for nn in nodes.values():
+        for n1, n2 in itertools.combinations(nn, 2):
+            res.update(f(n1, n2))
+
+    res = [p for p in res if 0 <= p.real < height and 0 <= p.imag < width]
+    return len(res)
+
+
+def problem9(data, second):
+    _data = split_data('''2333133121414131402''')
+    assert len(data) % 2
+    dd = np.zeros(len(data) + 1, dtype=np.int8)
+    for i, c in enumerate(data):
+        dd[i] = int(c)
+    size = sum(dd)
+    disk = np.ones(size, dtype=np.int32) * -1
+    idx = 0
+    freelist = []
+    filelist = []
+    for blockid, (b, e) in enumerate(itertools.batched(dd, 2)):
+        if b:
+            filelist.append((blockid, idx, b))
+            for i in range(b):
+                disk[idx] = blockid
+                idx += 1
+        if e:
+            freelist.append((idx, e))
+        idx += e
+
+    if not second:
+        idx1 = 0
+        idx2 = len(disk) - 1
+        while True:
+            while disk[idx2] < 0:
+                idx2 -= 1
+            while disk[idx1] >= 0:
+                idx1 += 1
+            if idx1 > idx2:
+                break
+            disk[idx1] = disk[idx2]
+            disk[idx2] = -1
+    else:
+        for blockid, idx1, l1 in reversed(filelist):
+            for i, (idx2, l2) in enumerate(freelist):
+                if idx2 > idx1:
+                    break
+                if l2 >= l1:
+                    disk[idx2 : idx2 + l1] = blockid
+                    disk[idx1 : idx1 + l1] = -1
+                    if l2 == l1:
+                        del freelist[i]
+                    else:
+                        freelist[i] = (idx2 + l1, l2 - l1)
+                    break
+
+    return sum(i * int(blockid) for i, blockid in enumerate(disk) if blockid > 0)
 
 
 
 
 
 
-#########
+
+##########
 
 def problem(data, second):
     if second: return
@@ -238,4 +416,5 @@ def problem(data, second):
 if __name__ == '__main__':
     print('Hello')
     solve_latest()
+    # solve_latest(6)
     # solve_all()
