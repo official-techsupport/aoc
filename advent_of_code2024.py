@@ -356,19 +356,18 @@ def problem9(data, second):
     for i, c in enumerate(data):
         dd[i] = int(c)
     size = sum(dd)
-    disk = np.ones(size, dtype=np.int32) * -1
+    disk = -1 * np.ones(size, dtype=np.int32)
     idx = 0
     freelist = []
     filelist = []
     for blockid, (b, e) in enumerate(itertools.batched(dd, 2)):
         if b:
             filelist.append((blockid, idx, b))
-            for i in range(b):
-                disk[idx] = blockid
-                idx += 1
+            disk[idx:idx + b] = blockid
+            idx += b
         if e:
             freelist.append((idx, e))
-        idx += e
+            idx += e
 
     if not second:
         idx1 = 0
@@ -397,6 +396,70 @@ def problem9(data, second):
                     break
 
     return sum(i * int(blockid) for i, blockid in enumerate(disk) if blockid > 0)
+
+
+def problem10(data, second):
+    if not second: return
+    _data = split_data('''
+89010123
+78121874
+87430965
+96549874
+45678903
+32019012
+01329801
+10456732''')
+    g = networkx.DiGraph()
+    height, width = len(data), len(data[0])
+    starts, ends = [], []
+    for r in range(height):
+        for c in range(width):
+            p1 = (r, c)
+            d1 = data[r][c]
+            if d1 == '0':
+                starts.append(p1)
+            if d1 == '9':
+                ends.append(p1)
+            for d in directions4:
+                p2 = addv2(p1, d)
+                if not (p2[0] in range(height) and p2[1] in range(width)):
+                    continue
+                d2 = data[p2[0]][p2[1]]
+                if d1 == '.' or d2 == '.':
+                    continue
+                if int(d2) - int(d1) == 1:
+                    g.add_edge(p1, p2)
+    sp = dict(networkx.all_pairs_all_shortest_paths(g))
+    if second:
+        return sum(sum(len(sp[s][e]) for e in ends if e in sp[s]) for s in starts)
+    return sum(sum(1 for e in ends if e in sp[s]) for s in starts)
+
+
+def problem11(data, second):
+    _data = split_data('''125 17''')
+    stones = [int(s) for s in data.split()]
+    def blink1(s):
+        if s == 0:
+            return [1]
+        st = str(s)
+        if not len(st) & 1:
+            return [
+                int(st[0 : len(st) // 2]),
+                int(st[len(st) // 2 : ])]
+        return [s * 2024]
+
+    def blink2(ss):
+        r = defaultdict(int)
+        for s, cnt in ss.items():
+            for s2 in blink1(s):
+                r[s2] += cnt
+        return r
+
+    stones = Counter(stones)
+    for _ in range(75 if second else 25):
+        stones = blink2(stones)
+
+    return sum(stones.values())
 
 
 
