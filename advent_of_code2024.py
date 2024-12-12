@@ -462,8 +462,75 @@ def problem11(data, second):
     return sum(stones.values())
 
 
+def problem12(data, second):
+    _data = split_data('''
+RRRRIICCFF
+RRRRIICCCF
+VVRRRCCFFF
+VVRCCCJFFF
+VVVVCJJCFE
+VVIVCCJJEE
+VVIIICJJEE
+MIIIIIJJEE
+MIIISIJEEE
+MMMISSJEEE''')
+    _data = split_data('''
+AAAAAA
+AAABBA
+AAABBA
+ABBAAA
+ABBAAA
+AAAAAA
+''')
 
+    height = len(data)
+    width = len(data[0])
 
+    def inside(p):
+        return p[0] in range(height) and p[1] in range(width)
+
+    def get_region(p):
+        letter = data[p[0]][p[1]]
+        visited = set([p])
+        front = deque(visited)
+        while front:
+            p = front.pop()
+            for d in directions4:
+                p2 = addv2(p, d)
+                if inside(p2) and not p2 in visited and data[p2[0]][p2[1]] == letter:
+                    front.append(p2)
+                    visited.add(p2)
+        return visited
+
+    def perimeter(region: set):
+        p = next(iter(region))
+        letter = data[p[0]][p[1]]
+        return sum(not inside(p2) or data[p2[0]][p2[1]] != letter for p2 in
+            (addv2(p, d) for p in region for d in directions4))
+
+    def sides(region: set):
+        p = next(iter(region))
+        letter = data[p[0]][p[1]]
+        ss = set()
+        for p in region:
+            for d in ((0, -1), (1, 0), (0, 1), (-1, 0)):
+                p2 = addv2(p, d)
+                if inside(p2) and data[p2[0]][p2[1]] == letter:
+                    continue
+                ss.add((p, d))
+        return sum((addv2(p, (1, 0)), d) not in ss and
+                   (addv2(p, (0, 1)), d) not in ss
+                   for p, d in ss)
+
+    remaining = {(r, c) for r in range(height) for c in range(width)}
+    rs = []
+    while remaining:
+        region = get_region(remaining.pop())
+        remaining -= region
+        rs.append(region)
+    if second:
+        return sum(len(r) * sides(r) for r in rs)
+    return sum(len(r) * perimeter(r) for r in rs)
 
 
 
