@@ -536,6 +536,57 @@ AAAAAA
     return sum(len(r) * perimeter(r) for r in rs)
 
 
+def problem13(data, second):
+    _data = split_data('''
+Button A: X+94, Y+34
+Button B: X+22, Y+67
+Prize: X=8400, Y=5400
+
+Button A: X+26, Y+66
+Button B: X+67, Y+21
+Prize: X=12748, Y=12176
+
+Button A: X+17, Y+86
+Button B: X+84, Y+37
+Prize: X=7870, Y=6450
+
+Button A: X+69, Y+23
+Button B: X+27, Y+71
+Prize: X=18641, Y=10279
+''')
+    data = iter(data)
+    def split1(s, sep):
+        _, s = s.split(':')
+        x, y = s.split(',')
+        x = int(x.split(sep)[1])
+        y = int(y.split(sep)[1])
+        return x, y
+    machines = []
+    for s in data:
+        if not(s):
+            s = next(data)
+        x1, y1 = split1(s, '+')
+        s = next(data)
+        x2, y2 = split1(s, '+')
+        s = next(data)
+        x3, y3 = split1(s, '=')
+        machines.append((x1, y1, x2, y2, x3, y3))
+    import z3
+    res = 0
+    addend = 10000000000000 if second else 0
+    a, b = z3.Ints('a b')
+    zs = z3.Solver()
+    zs.add(a >= 0)
+    zs.add(b >= 0)
+    for x1, y1, x2, y2, x3, y3 in machines:
+        zs.push()
+        zs.add(x1 * a + x2 * b == x3 + addend)
+        zs.add(y1 * a + y2 * b == y3 + addend)
+        if zs.check() == z3.sat:
+            res += zs.model().eval(a * 3 + b).as_long()
+        zs.pop()
+    return res
+
 
 ##########
 
