@@ -221,7 +221,7 @@ def problem5(data, second):
 
 
 def problem6(data, second):
-    data = split_data('''
+    _data = split_data('''
 ....#.....
 .........#
 ..........
@@ -237,30 +237,57 @@ def problem6(data, second):
     [pos] = np.argwhere(g == '^')
     pos = pos[1] + 1j*pos[0]
     d = -1j
-    obstructions = 0
+    visited = set()
+    LOOP = object()
+    obsset = set()
+    def inside(pos):
+        return pos.real in range(width) and pos.imag in range(height)
     def step(pos, d):
-        nonlocal obstructions
         pv2 = c2v2(pos)
-        cross = g[pv2] == 'X'
         g[pv2] = "X"
-        while True:
-            pos2 = pos + d
-            if not (pos2.real in range(width) and pos2.imag in range(height)):
-                return None, None
-            if g[c2v2(pos2)] == '#':
-                d *= 1j
-                continue
-            if cross:
-                print(pos)
-                obstructions += 1
-            break
-        return pos2, d
-    while pos is not None:
+        p = (pos, d)
+        if p in visited:
+            return LOOP, None
+        visited.add(p)
+        pos2 = pos + d
+        if not inside(pos2):
+            return None, None
+        if g[c2v2(pos2)] == '#':
+            d *= 1j
+        else:
+            pos = pos2
+        return pos, d
+
+    def run():
+        nonlocal pos, d
+        while pos is not None and pos != LOOP:
+            pos, d = step(pos, d)
+        return pos
+
+    if not second:
+        run()
+        return np.sum(g == 'X')
+
+    obstructions = 0
+    while True:
         pos, d = step(pos, d)
-    # print(g)
-    if second:
-        return obstructions
-    return np.sum(g == 'X')
+        if pos is None:
+            break
+        pos2 = pos + d
+        if inside(pos2) and g[c2v2(pos2)] == '.' and pos2 not in obsset:
+            visited = set()
+            shadowpos, shadowd, shadowg = pos, d, np.copy(g)
+            g[c2v2(pos2)] = '#'
+            res = run()
+            if res == LOOP:
+                obstructions += 1
+                print(obstructions)
+                obsset.add(pos2)
+            pos, d, g = shadowpos, shadowd, shadowg
+            visited = set()
+    return obstructions
+
+
 
 
 def problem7(data, second):
@@ -588,6 +615,67 @@ Prize: X=18641, Y=10279
     return res
 
 
+def problem14(data, second):
+    # if second: return
+    _data = split_data('''p=0,4 v=3,-3
+p=6,3 v=-1,-3
+p=10,3 v=-1,2
+p=2,0 v=2,-1
+p=0,0 v=1,3
+p=3,0 v=-2,-2
+p=7,6 v=-1,-3
+p=3,0 v=-1,-2
+p=9,3 v=2,3
+p=7,3 v=-1,2
+p=2,4 v=2,-3
+p=9,5 v=-3,-3''')
+    width, height = 11, 7
+    width, height = 101, 103
+    robots = []
+    w2 = width // 2
+    h2 = height // 2
+    steps = 100
+    def split2(s):
+        _, s = s.split('=')
+        a, b = s.split(',')
+        return int(a), int(b)
+    for s in data:
+        a, b = s.split()
+        robots.append(split2(a) + split2(b))
+    quadrants = defaultdict(int)
+    def quadrant(x, y):
+        if x == w2 or y == h2:
+            return 4
+        return (x < w2) * 2 + (y < h2)
+
+    if not second:
+        for x, y, dx, dy in robots:
+            x2 = (x + dx * steps) % width
+            y2 = (y + dy * steps) % height
+            quadrants[quadrant(x2, y2)] += 1
+        return quadrants[0] * quadrants[1] * quadrants[2] * quadrants[3]
+
+    most = 0
+    for steps in range(1, 1000000):
+        quadrants = defaultdict(int)
+        d = np.zeros((height, width))
+        coords = set()
+        for x, y, dx, dy in robots:
+            x2 = (x + dx * steps) % width
+            y2 = (y + dy * steps) % height
+            d[y2, x2] = 1
+            coords.add((y2, x2))
+        if len(coords) == len(robots):
+            return steps
+            # most = len(coords)
+            # print('\n'.join(''.join('#' if d[row][col] else '.' for col in range(width)) for row in range(height)))
+            # print(steps, most)
+
+
+
+
+
+
 ##########
 
 def problem(data, second):
@@ -599,6 +687,6 @@ def problem(data, second):
 
 if __name__ == '__main__':
     print('Hello')
-    solve_latest()
-    # solve_latest(6)
+    # solve_latest()
+    solve_latest(6)
     # solve_all()
