@@ -235,8 +235,8 @@ def problem6(data, second):
     g = ndarray_from_chargrid(data)
     height, width = len(g), len(g[0])
     [pos] = np.argwhere(g == '^')
-    pos = pos[1] + 1j*pos[0]
-    d = -1j
+    pos = pos[0] + 1j*pos[1]
+    d = -1
     visited = set()
     LOOP = object()
     obsset = set()
@@ -253,7 +253,7 @@ def problem6(data, second):
         if not inside(pos2):
             return None, None
         if g[c2v2(pos2)] == '#':
-            d *= 1j
+            d *= -1j
         else:
             pos = pos2
         return pos, d
@@ -655,8 +655,9 @@ p=9,5 v=-3,-3''')
             quadrants[quadrant(x2, y2)] += 1
         return quadrants[0] * quadrants[1] * quadrants[2] * quadrants[3]
 
-    most = 0
-    for steps in range(1, 1000000):
+    import zlib
+    most = 1000000
+    for steps in range(1, 10000):
         quadrants = defaultdict(int)
         d = np.zeros((height, width))
         coords = set()
@@ -665,12 +666,120 @@ p=9,5 v=-3,-3''')
             y2 = (y + dy * steps) % height
             d[y2, x2] = 1
             coords.add((y2, x2))
+
+        # l = len(zlib.compress(d, level=1))
+        # if l < most:
+        #     most = l
+        #     print('\n'.join(''.join('#' if d[row][col] else '.' for col in range(width)) for row in range(height)))
+        #     print(steps, most)
+
         if len(coords) == len(robots):
             return steps
-            # most = len(coords)
-            # print('\n'.join(''.join('#' if d[row][col] else '.' for col in range(width)) for row in range(height)))
-            # print(steps, most)
 
+
+
+
+def problem15(data, second):
+    # if second: return
+    _data = split_data('''
+#######
+#...#.#
+#.....#
+#..OO@#
+#..O..#
+#.....#
+#######
+
+<vv<<^^<<^^''')
+
+    _data = split_data('''
+##########
+#..O..O.O#
+#......O.#
+#.OO..O.O#
+#..O@..O.#
+#O#..O...#
+#O..O..O.#
+#.OO.O.OO#
+#....O...#
+##########
+
+<vv>^<v^>v>^vv^v>v<>v^v<v<^vv<<<^><<><>>v<vvv<>^v^>^<<<><<v<<<v^vv^v>^
+vvv<<^>^v^^><<>>><>^<<><^vv^^<>vvv<>><^^v>^>vv<>v<<<<v<^v>^<^^>>>^<v<v
+><>vv>v^v^<>><>>>><^^>vv>v<^^^>>v^v^<^^>v^^>v^<^v>v<>>v^v^<v>v^^<^^vv<
+<<v<^>>^^^^>>>v^<>vvv^><v<<<>^^^vv^<vvv>^>v<^^^^v<>^>vvvv><>>v^<<^^^^^
+^><^><>>><>^^<<^^v>>><^<v>^<vv>>v>>>^v><>^v><<<<v>>v<v<v>vvv>^<><<>^><
+^>><>^v<><^vvv<^^<><v<<<<<><^v<<<><<<^^<v<^^^><^>>^<v^><<<^>>^v<v^v<v^
+>^>>^v>vv>^<<^v<>><<><<v<<v><>v<^vv<<<>^^v^>^^>>><<^v>>v^v><^^>>^<>vv^
+<><^^>^^^<><vvvvv^v<v<<>^v<v>v<<^><<><<><<<^^<<<^<<>><<><^^^>^^<>^>v<>
+^^>vv<^v^v<vv>^<><v<^v>^^^>>>^^vvv^>vvv<>>>^<^>>>>>^<<^v>^vvv<>^<><<v>
+v^^>>><<^^<>>^v^<v^vv<>v^<<>^<^v^v><^<<<><<^<v><v<>vv>>v><v^<vv<>v^<<^''')
+    data = iter(data)
+    g = []
+    while line := next(data).strip():
+        if second:
+            g.append(''.join({'.': '..', '#': '##', 'O': '[]', '@': '@.'}[c] for c in line))
+        else:
+            g.append(line)
+    moves = ''.join(s for s in data)
+    g = np_cidx(ndarray_from_chargrid(g))
+    mdir = {'<': -1j, '>': 1j, '^': -1, 'v': 1}
+    [pos] = np.argwhere(g == '@')
+    pos = pos[0] + 1j * pos[1]
+    g[pos] = '.'
+    height, width = len(g), len(g[0])
+    def inside(pos):
+        return pos.real in range(width) and pos.imag in range(height)
+
+    def move(pos, d):
+        pos2 = pos + d
+        if (c := g[pos2]) == '#':
+            return pos
+        if c == '.':
+            return pos2
+        assert c == 'O'
+        pos3 = pos2
+        while True:
+            pos3 += d
+            c = g[pos3]
+            if c == '#':
+                return pos
+            if c == '.':
+                g[pos2] = '.'
+                g[pos3] = 'O'
+                return pos2
+
+    def move2(pos, d):
+        front = [pos]
+        fronts = []
+        while True:
+            front = [p + d for p in front]
+            if any(g[p] == '#' for p in front):
+                return pos
+            if all(g[p] == '.' for p in front):
+                for front in reversed(fronts):
+                    for p in front:
+                        g[p + d] = g[p]
+                        g[p] = '.'
+                return pos + d
+
+            if d.real:
+                front = set().union(*(
+                    [p, p + 1j if c == '[' else p - 1j]
+                    for p in front
+                    if (c := g[p]) in '[]'))
+            fronts.append(front)
+
+    # print(g)
+    mv = move2 if second else move
+    for m in moves:
+        pos = mv(pos, mdir[m])
+        # g[pos] = '@'
+        # print(g)
+        # g[pos] = '.'
+
+    c = '[' if second else 'O'
+    return sum(100*p[0] + p[1] for p in np.argwhere(g == c))
 
 
 
@@ -687,6 +796,6 @@ def problem(data, second):
 
 if __name__ == '__main__':
     print('Hello')
-    # solve_latest()
-    solve_latest(6)
+    solve_latest()
+    # solve_latest(6)
     # solve_all()

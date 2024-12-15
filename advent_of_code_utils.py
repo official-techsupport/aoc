@@ -113,7 +113,29 @@ def complex_2d_aabbox(arr: Iterable[complex]):
 
 
 def c2v2(c: complex):
+    '''x and y are flipped (stand for row, col) to match numpy indexing, but y is also flipped
+    so rotations work as expected'''
+    return int(c.real), int(c.imag)
+
+def c2v2_2023(c: complex):
     return int(c.imag), int(c.real)
+
+
+class np_cidx(np.ndarray):
+    '''np.ndarray that allows 2d indexing with complex numbers.'''
+    def __new__(cls, arr):
+        return np.asarray(arr).view(np_cidx)
+
+    def __getitem__(self, idx):
+        return super().__getitem__((int(idx.real), int(idx.imag)))
+
+    def __setitem__(self, idx, value):
+        return super().__setitem__((int(idx.real), int(idx.imag)), value)
+
+    @property
+    def arr(self):
+        '''In case you want to use usual indexing, `a.arr[1, 2]`'''
+        return self.view(np.ndarray)
 
 
 def _life(field):
@@ -356,9 +378,12 @@ answer_db: AnswerDb
 def utils_init(year, caller_globals):
     global answer_db
     answer_db = AnswerDb(year, caller_globals)
+    if year <= 2023:
+        global c2v2
+        c2v2 = c2v2_2023
 
 
-def split_data(s):
+def split_data(s: str)->List[str]:
     data = [s.strip() for s in s.strip().split('\n')]
     if len(data) == 1:
         [data] = data
