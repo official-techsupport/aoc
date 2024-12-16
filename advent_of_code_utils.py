@@ -117,12 +117,17 @@ def c2v2(c: complex):
     so rotations work as expected'''
     return int(c.real), int(c.imag)
 
+# old version
 def c2v2_2023(c: complex):
     return int(c.imag), int(c.real)
 
 
+def v22c(v):
+    return v[0] + 1j * v[1]
+
+
 class np_cidx(np.ndarray):
-    '''np.ndarray that allows 2d indexing with complex numbers.'''
+    '''np.ndarray subclass that allows 2d indexing with complex numbers.'''
     def __new__(cls, arr):
         return np.asarray(arr).view(np_cidx)
 
@@ -233,6 +238,8 @@ Vector2 = Tuple[int, int]
 # cw starting from north, y points down.
 directions4 = ((0, -1), (1, 0), (0, 1), (-1, 0))
 directions8 = ((0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1))
+cdirections4 = (-1, 1j, 1, -1j)
+
 # for dx, dy in directions4:
 #     nx, ny = x + dx, y + dy
 

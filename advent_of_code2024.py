@@ -677,8 +677,6 @@ p=9,5 v=-3,-3''')
             return steps
 
 
-
-
 def problem15(data, second):
     # if second: return
     _data = split_data('''
@@ -782,7 +780,82 @@ v^^>>><<^^<>>^v^<v^vv<>v^<<>^<^v^v><^<<<><<^<v><v<>vv>>v><v^<vv<>v^<<^''')
     return sum(100*p[0] + p[1] for p in np.argwhere(g == c))
 
 
+def problem16(data, second):
+    # if second: return
+    _data = split_data('''
+#################
+#...#...#...#..E#
+#.#.#.#.#.#.#.#.#
+#.#.#.#...#...#.#
+#.#.#.#.###.#.#.#
+#...#.#.#.....#.#
+#.#.#.#.#.#####.#
+#.#...#.#.#.....#
+#.#.#####.#.###.#
+#.#.#.......#...#
+#.#.###.#####.###
+#.#.#...#.....#.#
+#.#.#.#####.###.#
+#.#.#.........#.#
+#.#.#.#########.#
+#S#.............#
+#################''')
+    g = np_cidx(ndarray_from_chargrid(data))
+    [startpos] = np.argwhere(g == 'S')
+    startpos = v22c(startpos)
+    [endpos] = np.argwhere(g == 'E')
+    endpos = v22c(endpos)
+    g[startpos] = g[endpos] = '.'
 
+    class posd(namedtuple('posd', 'pos d')):
+        def __lt__(self, other):
+            return False
+
+    pd = posd(startpos, 1j)
+    front = [(0, pd, None)]
+    visited = {}
+    paths = defaultdict(list)
+
+    def unwind(pd):
+        visited = set()
+        front = deque([pd])
+        while front:
+            pd = front.popleft()
+            if pd in visited:
+                continue
+            visited.add(pd)
+            for nxt in paths[pd]:
+                if nxt is not None:
+                    front.append(nxt)
+        return len(set(pd.pos for pd in visited))
+
+    while front:
+        t, pd, prevpd = heappop(front)
+        prevt = visited.get(pd, None)
+        if prevt is not None:
+            if prevt == t:
+                paths[pd].append(prevpd)
+            continue
+        visited[pd] = t
+        paths[pd].append(prevpd)
+
+        pos, d = pd
+        if pos == endpos:
+            # in my data we can't arrive there from different directions
+            if second:
+                return unwind(pd)
+            return t
+        if g[pos + d] == '.':
+            npos = posd(pos + d, d)
+            if npos not in visited:
+                heappush(front, (t + 1, npos, pd))
+        npos = posd(pos, d*1j)
+        if npos not in visited:
+            heappush(front, (t + 1000, npos, pd))
+        npos = posd(pos, -d*1j)
+        if npos not in visited:
+            heappush(front, (t + 1000, npos, pd))
+    assert False
 
 
 ##########
