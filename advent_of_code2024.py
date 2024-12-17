@@ -808,6 +808,7 @@ def problem16(data, second):
     g[startpos] = g[endpos] = '.'
 
     class posd(namedtuple('posd', 'pos d')):
+        __slots__ = ()
         def __lt__(self, other):
             return False
 
@@ -856,6 +857,115 @@ def problem16(data, second):
         if npos not in visited:
             heappush(front, (t + 1000, npos, pd))
     assert False
+
+
+def problem17(data, second):
+    # if second: return
+    _data = split_data('''
+Register A: 729
+Register B: 0
+Register C: 0
+
+Program: 0,1,5,4,3,0
+''')
+    _data = split_data('''
+Register A: 2024
+Register B: 0
+Register C: 0
+
+Program: 0,3,5,4,3,0''')
+    data = iter(data)
+    a = int(next(data).split(':')[1])
+    b = int(next(data).split(':')[1])
+    c = int(next(data).split(':')[1])
+    assert not next(data)
+    code = list(map(int, next(data).split(':')[1].split(',')))
+
+    def run(a, b, c):
+        orig_a = a
+        pc = 0
+        res = []
+
+        def combo(arg):
+            if arg <= 3:
+                return arg
+            if arg == 4:
+                return a
+            if arg == 5:
+                return b
+            if arg == 6:
+                return c
+            assert False
+
+        while pc in range(0, len(code)):
+            op, arg = code[pc], code[pc + 1]
+            # print(f'pc={pc} a={a} b={b} c={c} out={res}')
+            pc += 2
+            if op == 0: # adv
+                a = a // (2 ** combo(arg))
+            elif op == 1: # bxl
+                b = b ^ arg
+            elif op == 2: # bst
+                b = combo(arg) % 8
+            elif op == 3: # jnz
+                if a: pc = arg
+            elif op == 4: # bxc
+                b = b ^ c
+            elif op == 5: # out
+                res.append(combo(arg) % 8)
+                if second and (len(res) > len(code) or res[-1] != code[len(res) - 1]):
+                    return None
+            elif op == 6: # bdv
+                b = a // (2 ** combo(arg))
+            elif op == 7: # cdv
+                c = a // (2 ** combo(arg))
+        if second and res != code:
+            return None
+        return res
+
+    def disassemble(code):
+        for op, arg in grouper(code, 2):
+            ops = ['adv', 'bxl', 'bst', 'jnz', 'bxc', 'out', 'bdv', 'cdv']
+            print(f'{ops[op]} {arg}')
+
+    if not second:
+        return ','.join(map(str, run(a, b, c)))
+
+    second = False
+
+    pows = [0] * len(code)
+    def pows2a(pows):
+        a = 0
+        p = 1
+        for it in reversed(pows):
+            a += p * it
+            p *= 8
+        return a
+
+    def recur(power):
+        if power == len(code):
+            return pows2a(pows)
+        d = code[-1 - power]
+        for a1 in range(8):
+            if power == 0 and a1 == 0:
+                continue
+            pows[power] = a1
+            a = pows2a(pows)
+            res = run(a, 0, 0)
+            # print(res)
+            if res[-1 - power] == d:
+                if a := recur(power + 1):
+                    return a
+        return 0
+
+    a = recur(0)
+    assert run(a, 0, 0) == code
+    return a
+
+    # for a in range(3 * 8 * 8):
+    #     print(f'{a:03o}', run(a, b, c))
+
+
 
 
 ##########
