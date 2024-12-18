@@ -882,7 +882,6 @@ Program: 0,3,5,4,3,0''')
     code = list(map(int, next(data).split(':')[1].split(',')))
 
     def run(a, b, c):
-        orig_a = a
         pc = 0
         res = []
 
@@ -913,14 +912,10 @@ Program: 0,3,5,4,3,0''')
                 b = b ^ c
             elif op == 5: # out
                 res.append(combo(arg) % 8)
-                if second and (len(res) > len(code) or res[-1] != code[len(res) - 1]):
-                    return None
             elif op == 6: # bdv
                 b = a // (2 ** combo(arg))
             elif op == 7: # cdv
                 c = a // (2 ** combo(arg))
-        if second and res != code:
-            return None
         return res
 
     def disassemble(code):
@@ -931,7 +926,33 @@ Program: 0,3,5,4,3,0''')
     if not second:
         return ','.join(map(str, run(a, b, c)))
 
-    second = False
+    # l'esprit d'escalier
+    # disassemble(code)
+
+    import z3
+    zs = z3.Solver()
+    aStart = z3.BitVec('a', 64)
+    a, b, c = aStart, 0, 0
+    for i, d in enumerate(code):
+        b = a               # bst 4
+        b ^= 1              # bxl 1
+        c = a >> b          # cdv 5
+        b ^= c              # bxc 4
+        b ^= 4              # bxl 4
+        a = a >> 3          # adv 3
+        zs.add(b % 8 == d)  # out 5
+        if i != len(code) - 1:
+            zs.add(a != 0)  # jnz 0
+        else:
+            zs.add(a == 0)
+    res = []
+    print(zs)
+    while zs.check() == z3.sat:
+        solution = zs.model().eval(aStart).as_long()
+        res.append(solution)
+        zs.add(aStart != solution)
+    print(res)
+    return min(res)
 
     pows = [0] * len(code)
     def pows2a(pows):
@@ -962,10 +983,83 @@ Program: 0,3,5,4,3,0''')
     assert run(a, 0, 0) == code
     return a
 
-    # for a in range(3 * 8 * 8):
-    #     print(f'{a:03o}', run(a, b, c))
 
+def problem18(data, second):
+    # if second: return
+    _data = split_data('''
+5,4
+4,2
+4,5
+3,0
+2,1
+6,3
+2,4
+1,5
+0,6
+3,3
+2,6
+5,1
+1,2
+5,5
+2,5
+6,5
+1,4
+0,4
+6,4
+1,1
+6,1
+1,0
+0,5
+1,6
+2,0''')
+    data = [int(b) + 1j*int(a) for s in data for a, b in [s.split(',')]]
+    width = height = 7
+    initial = 12
+    width = height = 71
+    initial = 1024
+    g = np_cidx(np.zeros((height, width), dtype=np.uint8))
+    for p in data[:initial]:
+        g[p] = 1
 
+    def inside(pos):
+        return pos.real in range(width) and pos.imag in range(height)
+
+    def run():
+        front = [0j]
+        target = width - 1 + (height - 1) * 1j
+        visited = set(front)
+        steps = 0
+        while front:
+            new = []
+            while front:
+                p = front.pop()
+                if p == target:
+                    return steps
+                for d in cdirections4:
+                    pn = p + d
+                    if inside(pn) and not pn in visited and not g[pn]:
+                        new.append(pn)
+                        g[pn] = 2
+                        visited.add(pn)
+            # print(g.arr)
+            front = new
+            steps += 1
+    if not second:
+        return run()
+    l = 0
+    r = len(data)
+    while l < r - 1:
+        m = (l + r) // 2
+        # print(l, r, m)
+        g.arr[:] = 0
+        for p in data[:m]:
+            g[p] = 1
+        if run():
+            l = m
+        else:
+            r = m
+    # print(data[l - 1 : r + 1])
+    return ','.join(str(p) for p in reversed(c2v2(data[l])))
 
 
 ##########
@@ -979,6 +1073,6 @@ def problem(data, second):
 
 if __name__ == '__main__':
     print('Hello')
-    solve_latest()
-    # solve_latest(6)
+    # solve_latest()
+    solve_latest(17)
     # solve_all()

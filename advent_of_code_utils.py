@@ -143,6 +143,14 @@ class np_cidx(np.ndarray):
         return self.view(np.ndarray)
 
 
+class key1(tuple):
+    __slots__ = ()
+    def __new__(cls, *args):
+        return super().__new__(cls, args)
+    def __lt__(self, other):
+        return self[0] < other[0]
+
+
 def _life(field):
     nb = sum(np.roll(field, (i - 1, j - 1), axis=(0, 1)) for i in range(3) for j in range(3))
     return (field & (nb == 4)) | (nb == 3)
