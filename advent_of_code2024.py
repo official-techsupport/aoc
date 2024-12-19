@@ -946,7 +946,6 @@ Program: 0,3,5,4,3,0''')
         else:
             zs.add(a == 0)
     res = []
-    print(zs)
     while zs.check() == z3.sat:
         solution = zs.model().eval(aStart).as_long()
         res.append(solution)
@@ -1062,6 +1061,56 @@ def problem18(data, second):
     return ','.join(str(p) for p in reversed(c2v2(data[l])))
 
 
+def problem19(data, second):
+    # if second: return
+    _data = split_data('''
+r, wr, b, g, bwu, rb, gb, br
+
+brwrr
+bggr
+gbbr
+rrbgbr
+ubwu
+bwurrg
+brgr
+bbrgwb''')
+    data = iter(data)
+    towels = [s.strip() for s in next(data).split(',')]
+    assert not next(data)
+    patterns = list(data)
+
+    res = 0
+    for pattern in patterns:
+        queue = [0]
+        visited = set(queue)
+        counts = Counter(queue)
+        while queue:
+            idx = heappop(queue)
+            cnt = counts[idx]
+            ts = towels
+            d = 0
+            while ts:
+                ts2 = []
+                idxnew = idx + d
+                for t in ts:
+                    if d >= len(t):
+                        if idxnew not in visited:
+                            heappush(queue, idxnew)
+                            visited.add(idxnew)
+                        counts[idxnew] += cnt
+                    elif idxnew >= len(pattern):
+                        continue
+                    elif t[d] == pattern[idxnew]:
+                        ts2.append(t)
+                ts = ts2
+                d += 1
+        last = counts[len(pattern)]
+        # print(last)
+        res += last if second else bool(last)
+    return res
+
+
+
 ##########
 
 def problem(data, second):
@@ -1073,6 +1122,6 @@ def problem(data, second):
 
 if __name__ == '__main__':
     print('Hello')
-    # solve_latest()
-    solve_latest(17)
+    solve_latest()
+    # solve_latest(17)
     # solve_all()
