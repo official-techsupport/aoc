@@ -1162,30 +1162,49 @@ def problem20(data, second):
                                 savings[best - newtime] += 1
         return sum(savings.values())
 
+    path = networkx.dijkstra_path(gr, startpos, endpos)
+    pathset = set(path)
+
     def check(p, p2, d):
-        if p2.real not in range(height) or p2.imag not in range(width):
+        if p2 not in pathset:
             return
         if p2 in targets:
-            return
-        if g[p2] != '.':
             return
         targets.add(p2)
         newtime = d1[p] + d + d2[p2]
         if best - newtime >= 100:
             savings[best - newtime] += 1
 
-    for r, c in it_product(range(1, height - 1), range(1, width - 1)):
-        p = r + 1j * c
-        if g[p] == '.':
-            targets = set()
-            for dr in range(21):
-                for dc in range(21 - dr):
-                    check(p, p + dr + 1j * dc, dr + dc)
-                    check(p, p + dr - 1j * dc, dr + dc)
-                    check(p, p - dr + 1j * dc, dr + dc)
-                    check(p, p - dr - 1j * dc, dr + dc)
-    # print(sorted(savings.items()))
+    for i, p1 in enumerate(path):
+        if not i % 100: print(i)
+        targets = set()
+        for dr in range(21):
+            for dc in range(21 - dr):
+                check(p1, p1 + dr + 1j * dc, dr + dc)
+                check(p1, p1 + dr - 1j * dc, dr + dc)
+                check(p1, p1 - dr + 1j * dc, dr + dc)
+                check(p1, p1 - dr - 1j * dc, dr + dc)
     return sum(savings.values())
+
+
+        # for p2 in itertools.islice(path, i + 1, None):
+        #     d = abs(p1.real - p2.real) + abs(p1.imag - p2.imag)
+        #     if d <= 20:
+        #         newtime = d1[p1] + d + d2[p2]
+        #         if best - newtime >= 100:
+        #             savings[best - newtime] += 1
+
+    # for r, c in it_product(range(1, height - 1), range(1, width - 1)):
+    #     p = r + 1j * c
+    #     if g[p] == '.':
+    #         targets = set()
+    #         for dr in range(21):
+    #             for dc in range(21 - dr):
+    #                 check(p, p + dr + 1j * dc, dr + dc)
+    #                 check(p, p + dr - 1j * dc, dr + dc)
+    #                 check(p, p - dr + 1j * dc, dr + dc)
+    #                 check(p, p - dr - 1j * dc, dr + dc)
+    # print(sorted(savings.items()))
 
 
 
