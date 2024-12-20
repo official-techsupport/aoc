@@ -1110,6 +1110,84 @@ bbrgwb''')
     return res
 
 
+def problem20(data, second):
+    # if second: return
+    _data = split_data('''
+###############
+#...#...#.....#
+#.#.#.#.#.###.#
+#S#...#.#.#...#
+#######.#.#.###
+#######.#.#...#
+#######.#.###.#
+###..E#...#...#
+###.#######.###
+#...###...#...#
+#.#####.#.###.#
+#.#...#.#.#...#
+#.#.#.#.#.#.###
+#...#...#...###
+###############''')
+    g = np_cidx(ndarray_from_chargrid(data))
+    [startpos] = np.argwhere(g == 'S')
+    startpos = v22c(startpos)
+    [endpos] = np.argwhere(g == 'E')
+    endpos = v22c(endpos)
+    g[startpos] = g[endpos] = '.'
+    height, width = len(g), len(g.arr[0])
+
+    gr = networkx.Graph()
+    for r in range(1, height - 1):
+        for c in range(1, width - 1):
+            p = r + 1j * c
+            if g[p] == '.':
+                for d in cdirections4:
+                    p2 = p + d
+                    if g[p2] == '.':
+                        gr.add_edge(p, p2)
+    d1 = networkx.single_source_dijkstra_path_length(gr, startpos)
+    d2 = networkx.single_source_dijkstra_path_length(gr, endpos)
+    best = d1[endpos]
+    savings = Counter()
+
+    if not second:
+        for r in range(1, height - 1):
+            for c in range(1, width - 1):
+                p = r + 1j * c
+                if g[p] == '#':
+                    for d in cdirections4:
+                        if g[p + d] == '.' and g[p - d] == '.':
+                            newtime = d1[p + d] + 2 + d2[p - d]
+                            if best - newtime >= 100:
+                                savings[best - newtime] += 1
+        return sum(savings.values())
+
+    def check(p, p2, d):
+        if p2.real not in range(height) or p2.imag not in range(width):
+            return
+        if p2 in targets:
+            return
+        if g[p2] != '.':
+            return
+        targets.add(p2)
+        newtime = d1[p] + d + d2[p2]
+        if best - newtime >= 100:
+            savings[best - newtime] += 1
+
+    for r, c in it_product(range(1, height - 1), range(1, width - 1)):
+        p = r + 1j * c
+        if g[p] == '.':
+            targets = set()
+            for dr in range(21):
+                for dc in range(21 - dr):
+                    check(p, p + dr + 1j * dc, dr + dc)
+                    check(p, p + dr - 1j * dc, dr + dc)
+                    check(p, p - dr + 1j * dc, dr + dc)
+                    check(p, p - dr - 1j * dc, dr + dc)
+    # print(sorted(savings.items()))
+    return sum(savings.values())
+
+
 
 ##########
 

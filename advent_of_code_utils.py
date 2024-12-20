@@ -11,7 +11,7 @@ from heapq import heappush, heappop, heapify
 from contextlib import contextmanager
 import copy, math, cmath, random, operator
 import itertools, re, functools, shutil, errno, sys, time, hashlib, json, ast, string
-from itertools import pairwise
+from itertools import pairwise, product as it_product
 import requests
 import numpy as np
 import networkx
