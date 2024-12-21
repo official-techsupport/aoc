@@ -1176,7 +1176,7 @@ def problem20(data, second):
             savings[best - newtime] += 1
 
     for i, p1 in enumerate(path):
-        if not i % 100: print(i)
+        # if not i % 100: print(i)
         targets = set()
         for dr in range(21):
             for dc in range(21 - dr):
@@ -1185,7 +1185,6 @@ def problem20(data, second):
                 check(p1, p1 - dr + 1j * dc, dr + dc)
                 check(p1, p1 - dr - 1j * dc, dr + dc)
     return sum(savings.values())
-
 
         # for p2 in itertools.islice(path, i + 1, None):
         #     d = abs(p1.real - p2.real) + abs(p1.imag - p2.imag)
@@ -1206,6 +1205,114 @@ def problem20(data, second):
     #                 check(p, p - dr - 1j * dc, dr + dc)
     # print(sorted(savings.items()))
 
+
+def problem21(data, second):
+    # if second: return
+    _data = split_data('''
+029A
+980A
+179A
+456A
+379A''')
+    k1 = ['789', '456', '123', '#0A']
+    k1d = {}
+    k1a = 3, 2
+    for r, c in it_product(range(4), range(3)):
+        k1d[k1[r][c]] = (r, c)
+
+    k2 = ['#^A', '<v>']
+    k2d = {}
+    k2a = 0, 2
+    for r, c in it_product(range(2), range(3)):
+        k2d[k2[r][c]] = (r, c)
+
+    max_keypad = 25 if second else 2
+
+    @functools.cache
+    def move(keypad, r, c, d):
+        if keypad:
+            k = k2
+            kd = k2d
+        else:
+            k = k1
+            kd = k1d
+
+        def move_r(r, rd):
+            while rd > r:
+                r += 1
+                yield 'v'
+            while rd < r:
+                r -= 1
+                yield '^'
+        def move_c(c, cd):
+            while cd > c:
+                c += 1
+                yield '>'
+            while cd < c:
+                c -= 1
+                yield '<'
+
+        rd, cd = kd[d]
+
+        def submove(res):
+            r, c = k2a
+            res2 = []
+            for d in res:
+                s, r, c = move(keypad + 1, r, c, d)
+                res2.append(s)
+            return ''.join(res2)
+
+        def submove2(rfirst):
+            if rfirst:
+                if (rd, c) == kd['#']:
+                    return ''
+            else:
+                if (r, cd) == kd['#']:
+                    return ''
+
+            res = []
+            if rfirst:
+                res.extend(move_r(r, rd))
+                res.extend(move_c(c, cd))
+            else:
+                res.extend(move_c(c, cd))
+                res.extend(move_r(r, rd))
+
+            res.append('A')
+            if keypad == max_keypad:
+                return ''.join(res)
+            else:
+                return submove(res)
+
+        s1 = submove2(True)
+        s2 = submove2(False)
+        if not s1:
+            s = s2
+        elif not s2:
+            s = s1
+        else:
+            s = s1 if len(s1) < len(s2) else s2
+        return s, rd, cd
+
+
+    def make_moves(keypad, seq):
+        r, c = k2a if keypad else k1a
+        res = []
+        for d in seq:
+            s, r, c = move(keypad, r, c, d)
+            res.append(s)
+        return ''.join(res)
+
+    r = 0
+    for s in data:
+        moves = make_moves(0, s)
+        c = len(moves) * int(s[:-1])
+        r += c
+        print(f'{s!r}: {c}')
+        # print(f'{s}: {moves} {len(moves)}')
+        # print(f'{s}: {moves2} {len(moves2)}')
+        # print(f'{s}: {moves3} {len(moves3)}')
+    return r
 
 
 ##########
