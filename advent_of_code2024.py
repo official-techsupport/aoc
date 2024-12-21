@@ -1256,11 +1256,11 @@ def problem21(data, second):
 
         def submove(res):
             r, c = k2a
-            res2 = []
+            res2 = 0
             for d in res:
                 s, r, c = move(keypad + 1, r, c, d)
-                res2.append(s)
-            return ''.join(res2)
+                res2 += s
+            return res2
 
         def submove2(rfirst):
             if rfirst:
@@ -1280,7 +1280,7 @@ def problem21(data, second):
 
             res.append('A')
             if keypad == max_keypad:
-                return ''.join(res)
+                return len(res)
             else:
                 return submove(res)
 
@@ -1291,27 +1291,24 @@ def problem21(data, second):
         elif not s2:
             s = s1
         else:
-            s = s1 if len(s1) < len(s2) else s2
+            s = min(s1, s2)
         return s, rd, cd
 
 
     def make_moves(keypad, seq):
         r, c = k2a if keypad else k1a
-        res = []
+        res = 0
         for d in seq:
             s, r, c = move(keypad, r, c, d)
-            res.append(s)
-        return ''.join(res)
+            res += s
+        return res
 
     r = 0
     for s in data:
         moves = make_moves(0, s)
-        c = len(moves) * int(s[:-1])
+        c = moves * int(s[:-1])
         r += c
         print(f'{s!r}: {c}')
-        # print(f'{s}: {moves} {len(moves)}')
-        # print(f'{s}: {moves2} {len(moves2)}')
-        # print(f'{s}: {moves3} {len(moves3)}')
     return r
 
 
