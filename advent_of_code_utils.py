@@ -15,6 +15,7 @@ from itertools import pairwise, product as it_product
 import requests
 import numpy as np
 import networkx
+
 # from blist import blist
 
 # line_profiler support
@@ -129,18 +130,13 @@ def v22c(v):
 class np_cidx(np.ndarray):
     '''np.ndarray subclass that allows 2d indexing with complex numbers.'''
     def __new__(cls, arr):
-        return np.asarray(arr).view(np_cidx)
+        return arr.view(np_cidx)
 
     def __getitem__(self, idx):
         return super().__getitem__((int(idx.real), int(idx.imag)))
 
     def __setitem__(self, idx, value):
         return super().__setitem__((int(idx.real), int(idx.imag)), value)
-
-    @property
-    def arr(self):
-        '''In case you want to use usual indexing, `a.arr[1, 2]`'''
-        return self.view(np.ndarray)
 
 
 class key1(tuple):

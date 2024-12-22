@@ -725,9 +725,6 @@ v^^>>><<^^<>>^v^<v^vv<>v^<<>^<^v^v><^<<<><<^<v><v<>vv>>v><v^<vv<>v^<<^''')
     [pos] = np.argwhere(g == '@')
     pos = pos[0] + 1j * pos[1]
     g[pos] = '.'
-    height, width = len(g), len(g[0])
-    def inside(pos):
-        return pos.real in range(width) and pos.imag in range(height)
 
     def move(pos, d):
         pos2 = pos + d
@@ -927,20 +924,25 @@ Program: 0,3,5,4,3,0''')
         return ','.join(map(str, run(a, b, c)))
 
     # l'esprit d'escalier
-    # disassemble(code)
+    disassemble(code)
 
     import z3
     zs = z3.Solver()
     aStart = z3.BitVec('a', 64)
+    # aStart = z3.Int('a')
     a, b, c = aStart, 0, 0
+    code = code[:2]
     for i, d in enumerate(code):
-        b = a               # bst 4
-        b ^= 1              # bxl 1
-        c = a >> b          # cdv 5
-        b ^= c              # bxc 4
-        b ^= 4              # bxl 4
-        a = a >> 3          # adv 3
-        zs.add(b % 8 == d)  # out 5
+        # b = a               # bst 4
+        b = a ^ 1           # bxl 1
+        c = z3.LShR(a, b)   # cdv 5
+        b = b ^ c           # bxc 4
+        b = b ^ 4           # bxl 4
+        a = z3.LShR(a, 3)   # adv 3
+        # bx = z3.BitVec(f'b{i}', 64)
+        # zs.add(bx == b & 7)
+        # zs.add(bx == d)  # out 5
+        zs.add(b & 7 == d)  # out 5
         if i != len(code) - 1:
             zs.add(a != 0)  # jnz 0
         else:
@@ -950,8 +952,13 @@ Program: 0,3,5,4,3,0''')
         solution = zs.model().eval(aStart).as_long()
         res.append(solution)
         zs.add(aStart != solution)
-    print(res)
-    return min(res)
+        if len(res) > 5:
+            break
+    # print(res)
+    # print(code)
+    # pprint([run(a, 0, 0) for a in res])
+    # assert all(run(a, 0, 0) == code for a in res)
+    # return min(res)
 
     pows = [0] * len(code)
     def pows2a(pows):
@@ -1128,22 +1135,23 @@ def problem20(data, second):
 #.#.#.#.#.#.###
 #...#...#...###
 ###############''')
-    g = np_cidx(ndarray_from_chargrid(data))
+    g = ndarray_from_chargrid(data)
+    gc = np_cidx(g)
     [startpos] = np.argwhere(g == 'S')
     startpos = v22c(startpos)
     [endpos] = np.argwhere(g == 'E')
     endpos = v22c(endpos)
-    g[startpos] = g[endpos] = '.'
-    height, width = len(g), len(g.arr[0])
+    gc[startpos] = gc[endpos] = '.'
+    height, width = len(g), len(g)
 
     gr = networkx.Graph()
     for r in range(1, height - 1):
         for c in range(1, width - 1):
             p = r + 1j * c
-            if g[p] == '.':
+            if gc[p] == '.':
                 for d in cdirections4:
                     p2 = p + d
-                    if g[p2] == '.':
+                    if gc[p2] == '.':
                         gr.add_edge(p, p2)
     d1 = networkx.single_source_dijkstra_path_length(gr, startpos)
     d2 = networkx.single_source_dijkstra_path_length(gr, endpos)
@@ -1154,9 +1162,9 @@ def problem20(data, second):
         for r in range(1, height - 1):
             for c in range(1, width - 1):
                 p = r + 1j * c
-                if g[p] == '#':
+                if gc[p] == '#':
                     for d in cdirections4:
-                        if g[p + d] == '.' and g[p - d] == '.':
+                        if gc[p + d] == '.' and gc[p - d] == '.':
                             newtime = d1[p + d] + 2 + d2[p - d]
                             if best - newtime >= 100:
                                 savings[best - newtime] += 1
@@ -1195,7 +1203,7 @@ def problem20(data, second):
 
     # for r, c in it_product(range(1, height - 1), range(1, width - 1)):
     #     p = r + 1j * c
-    #     if g[p] == '.':
+    #     if gc[p] == '.':
     #         targets = set()
     #         for dr in range(21):
     #             for dc in range(21 - dr):
@@ -1231,10 +1239,8 @@ def problem21(data, second):
     @functools.cache
     def move(keypad, r, c, d):
         if keypad:
-            k = k2
             kd = k2d
         else:
-            k = k1
             kd = k1d
 
         def move_r(r, rd):
@@ -1310,6 +1316,53 @@ def problem21(data, second):
         r += c
         print(f'{s!r}: {c}')
     return r
+
+import numba
+@numba.njit
+def problem22(data, second):
+    # if second: return
+#     _data = split_data('''
+# 1
+# 2
+# 3
+# 2024''')
+    MOD = 16777216
+    def step(x):
+        y = x * 64
+        x = (x ^ y) % MOD
+        y = x >> 5
+        x = (x ^ y) % MOD
+        y = x * 2048
+        x = (x ^ y) % MOD
+        return x
+    res = 0
+    prices = []
+    for ns in data:
+        with numba.objmode(n=numba.int32):
+            n = int(ns)
+        price = np.zeros(2001, dtype=np.int32)
+        price[0] = n % 10
+        for i in range(2000):
+            n = step(n)
+            price[i + 1] = n % 10
+        res += n
+        prices.append(price)
+    if not second:
+        return res
+
+    diffs = []
+    for p in prices:
+        diffs.append(p[1:] - p[:-1])
+
+    cnt = numba.typed.Dict.empty(numba.int64, numba.int64)
+    for price, diff in zip(prices, diffs):
+        seen = set()
+        for i in range(len(diff) - 3):
+            k = diff[i] + 100*diff[i + 1] + 100_00*diff[i + 2] + 100_00_00*diff[i + 3]
+            if k not in seen:
+                cnt[k] = cnt.get(k, 0) + price[i + 4]
+                seen.add(k)
+    return max(cnt.values())
 
 
 ##########
