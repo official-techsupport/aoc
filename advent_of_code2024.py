@@ -1317,9 +1317,10 @@ def problem21(data, second):
         print(f'{s!r}: {c}')
     return r
 
-import numba
-@numba.njit
+# import numba
+# @numba.njit
 def problem22(data, second):
+    return
     # if second: return
 #     _data = split_data('''
 # 1
@@ -1363,6 +1364,58 @@ def problem22(data, second):
                 cnt[k] = cnt.get(k, 0) + price[i + 4]
                 seen.add(k)
     return max(cnt.values())
+
+
+def problem23(data, second):
+    # if second: return
+    _data = split_data('''
+kh-tc
+qp-kh
+de-cg
+ka-co
+yn-aq
+qp-ub
+cg-tb
+vc-aq
+tb-ka
+wh-tc
+yn-cg
+kh-ub
+ta-co
+de-co
+tc-td
+tb-wq
+wh-td
+ta-ka
+td-qp
+aq-cg
+wq-ub
+ub-vc
+de-ta
+wq-aq
+wq-vc
+wh-yn
+ka-de
+kh-ta
+co-tc
+wh-qp
+tb-vc
+td-yn''')
+    g = networkx.Graph()
+    for s in data:
+        a, b = s.split('-')
+        g.add_edge(a, b)
+    res = set()
+    for n in g.nodes:
+        if not n.startswith('t'):
+            continue
+        for e1, e2 in it_product(g.adj[n], g.adj[n]):
+            if (e1, e2) in g.edges:
+                res.add(tuple(sorted((n, e1, e2))))
+    if not second:
+        return len(res)
+    clique = max(networkx.find_cliques(g), key=len)
+    return ','.join(sorted(clique))
 
 
 ##########
