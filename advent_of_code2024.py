@@ -1418,6 +1418,137 @@ td-yn''')
     return ','.join(sorted(clique))
 
 
+def problem24(data, second):
+    # if second: return
+    _data = split_data('''
+x00: 0
+x01: 1
+x02: 0
+x03: 1
+x04: 0
+x05: 1
+y00: 0
+y01: 0
+y02: 1
+y03: 1
+y04: 0
+y05: 1
+
+x00 AND y00 -> z05
+x01 AND y01 -> z02
+x02 AND y02 -> z01
+x03 AND y03 -> z03
+x04 AND y04 -> z04
+x05 AND y05 -> z00''')
+    data = iter(data)
+    signals = {}
+    while s := next(data):
+        a, b = s.split(': ')
+        signals[a] = int(b)
+    gates_raw = []
+    for s in data:
+        a, z = s.split('->')
+        x, op, y = a.split()
+        z = z.strip()
+        gates_raw.append((x, op, y, z))
+
+    gates = {}
+    gates_idx = defaultdict(list)
+    gates_idx2 = {}
+    gates_lst = []
+    renames = {}
+    rev_renames = {}
+    wire_swaps_raw = [('hqk', 'z35'), ('fhc', 'z06'), ('mwh', 'ggt'), ('z11', 'qhj')] if second else []
+    wire_swaps = {}
+    for a, b in wire_swaps_raw:
+        wire_swaps[a] = b
+        wire_swaps[b] = a
+
+    def parse_gates():
+        gates.clear()
+        gates_idx.clear()
+        gates_idx2.clear()
+        gates_lst.clear()
+        for x, op, y, z in gates_raw:
+            x = renames.get(x, x)
+            y = renames.get(y, y)
+            z = wire_swaps.get(z, z)
+            z = renames.get(z, z)
+            if x > y:
+                x, y = y, x
+            gates[z] = (op, x, y)
+            gates_idx[x].append(z)
+            gates_idx[y].append(z)
+            gates_lst.append((x, y, op, z))
+            gates_idx2[(x, y, op)] = z
+
+    parse_gates()
+
+    OPS = {'OR': lambda x, y: int(x or y),
+           'AND': lambda x, y: int(x and y),
+           'XOR': lambda x, y: int(x != y),
+    }
+
+    ping = set(signals)
+    seen = set()
+    while ping:
+        s = ping.pop()
+        for z in gates_idx[s]:
+            if z in seen:
+                continue
+            op, x, y = gates[z]
+            if x in signals and y in signals:
+                res = OPS[op](signals[x], signals[y])
+                signals[z] = res
+                seen.add(z)
+                ping.add(z)
+    if not second:
+        outs = sorted(z for z in signals if z[0] == ('z'))
+        return int(''.join(str(signals[c]) for c in reversed(outs)), 2)
+
+    INPUT_BITS = 45
+
+    def gate(x, y, op):
+        return (f'x{x:02}', f'y{y:02}', op)
+
+    def rename(a, b):
+        assert a not in renames
+        assert b not in rev_renames
+        renames[a] = b
+        rev_renames[b] = a
+
+    for i in range(INPUT_BITS):
+        r = gates_idx2[gate(i, i, 'XOR')]
+        c = gates_idx2[gate(i, i, 'AND')]
+        if r[0] != 'z': rename(r, f'_r{i:02}')
+        if c[0] != 'z': rename(c, f'_c{i:02}')
+
+    parse_gates()
+
+    # dump_txt = open('dump.txt', 'w')
+    gates_lst.sort()
+    for x, y, op, z in gates_lst:
+        orig = rev_renames.get(z)
+        orig = f' ({orig})' if orig else ''
+        s = f'{x} {op:<3} {y} = {z}{orig}'
+        # print(s)
+        # print(s, file=dump_txt)
+    # dump_txt.close()
+
+    return ','.join(sorted(wire_swaps))
+
+
+
+
+
+
+
+
+
+
+
+
+
 ##########
 
 def problem(data, second):

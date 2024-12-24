@@ -20,7 +20,7 @@ import networkx
 
 # line_profiler support
 try:
-    profile
+    profile # type: ignore
 except:
     def profile(f):
         return f
