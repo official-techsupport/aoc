@@ -1458,7 +1458,7 @@ x05 AND y05 -> z00''')
     gates_lst = []
     renames = {}
     rev_renames = {}
-    wire_swaps_raw = [('hqk', 'z35'), ('fhc', 'z06'), ('mwh', 'ggt'), ('z11', 'qhj')] if second else []
+    wire_swaps_raw = [] # [('hqk', 'z35'), ('fhc', 'z06'), ('mwh', 'ggt'), ('z11', 'qhj')] if second else []
     wire_swaps = {}
     for a, b in wire_swaps_raw:
         wire_swaps[a] = b
@@ -1489,24 +1489,76 @@ x05 AND y05 -> z00''')
            'XOR': lambda x, y: int(x != y),
     }
 
-    ping = set(signals)
-    seen = set()
-    while ping:
-        s = ping.pop()
-        for z in gates_idx[s]:
-            if z in seen:
-                continue
-            op, x, y = gates[z]
-            if x in signals and y in signals:
-                res = OPS[op](signals[x], signals[y])
-                signals[z] = res
-                seen.add(z)
-                ping.add(z)
-    if not second:
+    def run(signals):
+        ping = set(signals)
+        seen = set()
+        while ping:
+            s = ping.pop()
+            for z in gates_idx[s]:
+                if z in seen:
+                    continue
+                op, x, y = gates[z]
+                if x in signals and y in signals:
+                    res = OPS[op](signals[x], signals[y])
+                    signals[z] = res
+                    seen.add(z)
+                    ping.add(z)
         outs = sorted(z for z in signals if z[0] == ('z'))
         return int(''.join(str(signals[c]) for c in reversed(outs)), 2)
 
+    if not second:
+        return run(signals)
+
     INPUT_BITS = 45
+
+    # TESTS = 50
+    # rng = random.Random(0)
+    # tests = []
+    # for _ in range(TESTS):
+    #     x = rng.getrandbits(INPUT_BITS)
+    #     y = rng.getrandbits(INPUT_BITS)
+    #     tests.append((x, y, x + y))
+
+    # def set_input(n, prefix):
+    #     for i in range(INPUT_BITS):
+    #         signals[f'{prefix}{i:02d}'] = n & 1
+    #         n >> 1
+
+    # def count_trailing_zeroes(n):
+    #     for res in range(1000):
+    #         if not n or (n & 1):
+    #             return res
+    #         n >>= 1
+
+    # def score_on_tests():
+    #     minscore = 1000
+    #     for x, y, z in tests:
+    #         set_input(x, 'x')
+    #         set_input(y, 'y')
+    #         rz = run(signals)
+    #         score = count_trailing_zeroes(z ^ rz)
+    #         minscore = min(minscore, score)
+    #     return minscore
+
+    # for depth in range(4):
+    #     maxscore = (-1, '', '')
+    #     for i in range(len(gates)):
+    #         for j in range(i + 1, len(gates)):
+    #             z1, z2 = gates_lst[i][3], gates_lst[j][3]
+    #             if z1 in wire_swaps or z2 in wire_swaps:
+    #                 continue
+    #             wire_swaps[z1] = z2
+    #             wire_swaps[z2] = z1
+    #             parse_gates()
+    #             minscore = score_on_tests()
+    #             del wire_swaps[z1]
+    #             del wire_swaps[z2]
+    #             maxscore = max(maxscore, (minscore, z1, z2))
+    #         print(depth, i, maxscore)
+    #     _, z1, z2 = maxscore
+    #     wire_swaps[z1] = z2
+    #     wire_swaps[z2] = z1
+    # return ','.join(sorted(wire_swaps))
 
     def gate(x, y, op):
         return (f'x{x:02}', f'y{y:02}', op)
@@ -1524,6 +1576,7 @@ x05 AND y05 -> z00''')
         if c[0] != 'z': rename(c, f'_c{i:02}')
 
     parse_gates()
+    print(len(gates_lst))
 
     # dump_txt = open('dump.txt', 'w')
     gates_lst.sort()
@@ -1538,15 +1591,78 @@ x05 AND y05 -> z00''')
     return ','.join(sorted(wire_swaps))
 
 
+def problem25(data, second):
+    if second: return
+    _data = split_data('''
+#####
+.####
+.####
+.####
+.#.#.
+.#...
+.....
 
+#####
+##.##
+.#.##
+...##
+...#.
+...#.
+.....
 
+.....
+#....
+#....
+#...#
+#.#.#
+#.###
+#####
 
+.....
+.....
+#.#..
+###..
+###.#
+###.#
+#####
 
+.....
+.....
+.....
+#....
+#.#..
+#.#.#
+#####''')
 
+    arr = []
+    locks = []
+    keys = []
 
+    def parse_arr():
+        if not arr:
+            return
+        profile = []
+        for col in range(len(arr[0])):
+            cnt = 0
+            for row in range(1, len(arr)):
+                if arr[row][col] != arr[0][col]:
+                    break
+                cnt += 1
+            profile.append(cnt)
+        if arr[0][0]=='#':
+            locks.append(profile)
+        else:
+            keys.append(profile)
+        arr.clear()
 
+    for s in data:
+        if not s:
+            parse_arr()
+        else:
+            arr.append(s)
+    parse_arr()
 
-
+    return sum(all(l <= k for l, k in zip(ll, kk)) for ll, kk in it_product(locks, keys))
 
 
 ##########
