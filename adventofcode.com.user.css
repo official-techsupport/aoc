@@ -1,0 +1,5 @@
+@-moz-document domain("adventofcode.com") {
+article *[title] {
+    border: 1px dotted #ffff66;
+}
+}
