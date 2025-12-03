@@ -85,6 +85,43 @@ def problem2(data, second):
     return total
 
 
+def problem3(data, second):
+    # if second: return
+    _data = split_data('''
+987654321111111
+811111111111119
+234234234234278
+818181911112111
+''')
+    if not second:
+        total = 0
+        for s in data:
+            m = 0
+            for i, c1 in enumerate(s):
+                for c2 in s[i + 1:]:
+                    j = int(c1 + c2)
+                    m = max(m, j)
+            total += m
+        return total
+    # second
+    def solve(s):
+        @functools.cache
+        def recur(pos, remaining):
+            if not remaining:
+                return 0
+            res = None
+            for i in range(pos, len(s)):
+                r1 = recur(i + 1, remaining - 1)
+                if r1 is None: break
+                d = int(s[i]) * 10 ** (remaining - 1)
+                res = max(res or 0, d + r1)
+            return res
+        return recur(0, 12)
+    return sum(solve(s) for s in data)
+
+
+
+
 
 
 
