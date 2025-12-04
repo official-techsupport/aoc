@@ -120,9 +120,42 @@ def problem3(data, second):
     return sum(solve(s) for s in data)
 
 
+def problem4(data, second):
+    # if second: return
+    _data = split_data('''
+..@@.@@@@.
+@@@.@.@.@@
+@@@@@.@.@@
+@.@@@@..@.
+@@.@@@@.@@
+.@@@@@@@.@
+.@.@.@.@@@
+@.@@@.@@@@
+.@@@@@@@@.
+@.@.@@@.@.
+    ''')
 
+    # field = ndarray_from_chargrid(data)
+    field = np.array([list(row) for row in data], dtype='U1')
+    field = (field == '@').astype('int8')
+    field = np.pad(field, 1)
 
+    if not second:
+        nb = sum(np.roll(field, (i - 1, j - 1), axis=(0, 1))
+                 for i in range(3) for j in range(3) if i != 1 or j != 1)
+        field = field & (nb < 4)
+        return np.sum(field)
 
+    removed = 0
+    while True:
+        nb = sum(np.roll(field, (i - 1, j - 1), axis=(0, 1))
+                 for i in range(3) for j in range(3) if i != 1 or j != 1)
+        removable = field & (nb < 4)
+        cnt = np.sum(removable)
+        if not cnt:
+            return removed
+        removed += cnt
+        field ^= removable
 
 
 
