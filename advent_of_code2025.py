@@ -158,6 +158,65 @@ def problem4(data, second):
         field ^= removable
 
 
+def problem5(data, second):
+    # if second: return
+    _data = split_data('''
+3-5
+10-14
+16-20
+12-18
+
+1
+5
+8
+11
+17
+32
+    ''')
+    ranges = []
+    ingrs = []
+    for s in data:
+        if not s:
+            continue
+        ss = s.split('-')
+        if len(ss) == 2:
+            ranges.append(range(int(ss[0]), int(ss[1]) + 1))
+        else:
+            assert len(ss) == 1
+            ingrs.append(int(ss[0]))
+    if not second:
+        fresh = 0
+        for i in ingrs:
+            for r in ranges:
+                if i in r:
+                    fresh += 1
+                    break
+        return fresh
+
+    def union(r1, r2):
+        if r1.start >= r2.start and r1.stop <= r2.stop:
+            return r2, True
+        if r2.start >= r1.start and r2.stop <= r1.stop:
+            return r1, True
+        if r1.start >= r2.start and r1.stop >= r2.stop and r2.stop >= r1.start:
+            return range(r2.start, r1.stop), True
+        if r2.start >= r1.start and r2.stop >= r1.stop and r1.stop >= r2.start:
+            return range(r1.start, r2.stop), True
+        return r2, False
+
+    disjoint = []
+    for r in ranges:
+        d2 = []
+        for d in disjoint:
+            r2, joined = union(d, r)
+            if joined:
+                r = r2
+            else:
+                d2.append(d)
+        d2.append(r)
+        disjoint = d2
+
+    return sum(r.stop - r.start for r in disjoint)
 
 
 ##########
