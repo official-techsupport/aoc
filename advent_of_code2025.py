@@ -219,6 +219,87 @@ def problem5(data, second):
     return sum(r.stop - r.start for r in disjoint)
 
 
+def problem6(data, second):
+    # if second: return
+    data = '''
+123 328  51 64
+ 45 64  387 23
+  6 98  215 314
+*   +   *   +
+'''
+    data = get_raw_data()
+    data = [s for s in data.split('\n') if s.strip()]
+    if not second:
+        data = [s.split() for s in data]
+        assert all(len(d) == len(data[0]) for d in data)
+        res = 0
+        for i, op in enumerate(data[-1]):
+            op = {'+' : operator.add, '*': operator.mul}[op]
+            ds = [int(data[j][i]) for j in range(len(data) - 1)]
+            res += functools.reduce(op, ds)
+        return res
+    # second
+    l = max(len(s) for s in data)
+    data = [s + ' ' * (l - len(s)) for s in data]
+    res = 0
+    cols_src = list(re.finditer('[+*]\\s*', data[-1]))
+    for col, m in enumerate(cols_src):
+        # print(col, m)
+        ds = []
+        for digit_pos in range(m.span()[0], m.span()[1]):
+            s = ''
+            for i in range(len(data) - 1):
+                s += data[i][digit_pos]
+            s = s.strip()
+            if s: ds.append(int(s))
+        op = m.group()[0]
+        op = {'+' : operator.add, '*': operator.mul}[op]
+        res += functools.reduce(op, ds)
+    return res
+
+
+
+
+def problem7(data, second):
+    # if second: return
+    _data = split_data('''.......S.......
+...............
+.......^.......
+...............
+......^.^......
+...............
+.....^.^.^.....
+...............
+....^.^...^....
+...............
+...^.^...^.^...
+...............
+..^...^.....^..
+...............
+.^.^.^.^.^...^.
+...............''')
+    beampos = {data[0].find('S'): 1}
+    assert beampos
+    cnt = 0
+    for line in data:
+        if '^' in line:
+            newb = Counter()
+            for b, c in beampos.items():
+                if line[b] == '^':
+                    cnt += 1
+                    newb[b - 1] += c
+                    newb[b + 1] += c
+                else:
+                    newb[b] += c
+            beampos = newb
+    if second:
+        return sum(beampos.values())
+    return cnt
+
+
+
+
+
 ##########
 
 def problem(data, second):
@@ -231,5 +312,5 @@ def problem(data, second):
 if __name__ == '__main__':
     print('Hello')
     solve_latest()
-    # solve_latest(17)
+    # solve_latest(6)
     # solve_all()
