@@ -297,6 +297,99 @@ def problem7(data, second):
     return cnt
 
 
+def problem8(data, second):
+    # if second: return
+    _data = split_data('''
+162,817,812
+57,618,57
+906,360,560
+592,479,940
+352,342,300
+466,668,158
+542,29,236
+431,825,988
+739,650,466
+52,470,668
+216,146,977
+819,987,18
+117,168,530
+805,96,715
+346,949,466
+970,615,88
+941,993,340
+862,61,35
+984,92,344
+425,690,689''')
+    CONNS = 10 if len(data) <= 20 else 1000
+    nodes = [list(map(int, s.split(','))) for s in data]
+    dists = []
+    for i, n1 in enumerate(nodes):
+        for j in range(i + 1, len(nodes)):
+            x1, y1, z1 = n1
+            x2, y2, z2 = nodes[j]
+            dists.append(((x1 - x2)**2 + (y1 - y2)**2 + (z1 - z2)**2, i, j))
+    dists.sort()
+    if not second:
+        g = networkx.Graph()
+        for i in range(CONNS):
+            _, a, b = dists[i]
+            g.add_edge(a, b)
+        components = list(networkx.connected_components(g))
+        components.sort(key=len, reverse=True)
+        return len(components[0]) * len(components[1]) * len(components[2])
+
+    if True and 0:
+        uf = networkx.utils.UnionFind()
+        edges_added = 0
+        for _, a, b in dists:
+            if uf[a] != uf[b]:
+                uf.union(a, b)
+                edges_added += 1
+                if edges_added == len(nodes) - 1:
+                    return nodes[a][0] * nodes[b][0]
+        assert False
+
+    components = {}
+    node2comp = {}
+
+    def merge(ac, bc):
+        for b in components[bc]:
+            node2comp[b] = ac
+        components[ac].extend(components[bc])
+        del components[bc]
+
+    for _, a, b in dists:
+        ac = node2comp.get(a)
+        bc = node2comp.get(b)
+        if ac is None and bc is None:
+            components[a] = [a, b]
+            node2comp[a] = a
+            node2comp[b] = a
+        elif ac is None:
+            node2comp[a] = bc
+            components[bc].append(a)
+        elif bc is None:
+            node2comp[b] = ac
+            components[ac].append(b)
+        elif ac == bc:
+            continue
+        else:
+            if len(components[ac]) > len(components[bc]):
+                merge(ac, bc)
+            else:
+                merge(bc, ac)
+        # print(a, b, ac, bc, components)
+        if len(components) == 1 and len(next(iter(components.values()))) == len(nodes):
+            return nodes[a][0] * nodes[b][0]
+    assert False
+
+
+
+
+
+
+
+
 
 
 
